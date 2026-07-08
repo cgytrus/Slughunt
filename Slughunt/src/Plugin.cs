@@ -340,18 +340,6 @@ public partial class Plugin : BaseUnityPlugin {
         game.shortcuts.transportVessels.Clear();
         game.shortcuts.betweenRoomsWaitingLobby.Clear();
         game.shortcuts.borderTravelVessels.Clear();
-        //for (int i = game.shortcuts.transportVessels.Count - 1; i >= 0; i--) {
-        //    if (!newWorld.region.IsRoomInRegion(game.shortcuts.transportVessels[i].room.index))
-        //        game.shortcuts.transportVessels.RemoveAt(i);
-        //}
-        //for (int i = game.shortcuts.betweenRoomsWaitingLobby.Count - 1; i >= 0; i--) {
-        //    if (!newWorld.region.IsRoomInRegion(game.shortcuts.betweenRoomsWaitingLobby[i].room.index))
-        //        game.shortcuts.betweenRoomsWaitingLobby.RemoveAt(i);
-        //}
-        //for (int i = game.shortcuts.borderTravelVessels.Count - 1; i >= 0; i--) {
-        //    if (!newWorld.region.IsRoomInRegion(game.shortcuts.borderTravelVessels[i].room.index))
-        //        game.shortcuts.borderTravelVessels.RemoveAt(i);
-        //}
 
         oldWorld.regionState?.AdaptRegionStateToWorld(-1, -1);
         oldWorld.regionState?.world = null;
