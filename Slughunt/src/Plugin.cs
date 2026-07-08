@@ -274,14 +274,13 @@ public partial class Plugin : BaseUnityPlugin {
             // TODO: maybe figure out fade to black too
             self.manager.fadeToBlack = 1.0f;
 
-            AbstractCreature player = self.Players[0];
-
-            if (player.realizedCreature is Player realizedPlayer) {
+            if (self.Players[0].realizedCreature is Player realizedPlayer) {
                 realizedPlayer.AllGraspsLetGoOfThisObject(true);
                 realizedPlayer.LoseAllGrasps();
                 realizedPlayer.Destroy();
             }
-            player.Destroy();
+            self.Players[0].Destroy();
+            self.Players.RemoveAt(0);
 
             string shelter = gameMode.lobbyData.RandomShelter().ToUpperInvariant();
 
@@ -307,21 +306,15 @@ public partial class Plugin : BaseUnityPlugin {
 
         game.SpawnPlayers(true, false, false, false, new WorldCoordinate(room.index, 0, 0, -1));
 
-        // the game assumes players[0] is the main/only player in a loooot of places
-        game.Players[0] = game.Players[game.Players.Count - 1];
-        game.Players.RemoveAt(game.Players.Count - 1);
-        AbstractCreature player = game.Players[0];
+        game.cameras[0].followAbstractCreature = game.Players[0];
 
-        game.cameras[0].followAbstractCreature = player;
-
-        if (game.roomRealizer is not null && game.roomRealizer.world != game.world) {
+        if (game.roomRealizer is not null && game.roomRealizer.world != game.world)
             game.roomRealizer = new RoomRealizer(game.cameras[0].followAbstractCreature, game.world);
-        }
 
         if (room.realizedRoom is null)
             room.RealizeRoom(game.world, game);
         else if (room.realizedRoom.readyForAI)
-            player.RealizeInRoom();
+            game.Players[0].RealizeInRoom();
 
         foreach (RoomCamera camera in game.cameras) {
             camera.virtualMicrophone.AllQuiet();

@@ -173,6 +173,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         for (int i = avatars.Count - 1; i >= 0; i--) {
             if (opoMap.TryGetValue(avatars[i].abstractCreature, out OnlinePhysicalObject? opo) && avatars[i] == opo)
                 continue;
+            Plugin.logger.LogInfo($"cleaning up avatar {i} {avatars[i]}");
             avatars.RemoveAt(i);
         }
     }
