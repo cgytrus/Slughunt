@@ -1,0 +1,12 @@
+{
+  "id": "cwonfig.slughunt",
+  "name": "Slughunt",
+  "version": "1.0.0",
+  "target_game_version": "v1.11.8",
+  "authors": "ConfiG",
+  "description": "slughunt\nSource code: https://github.com/cgytrus/Slughunt",
+  "requirements": [ "henpemaz_rainmeadow" ],
+  "requirements_names": [ "Rain Meadow" ],
+  "priorities": [ "henpemaz_rainmeadow" ],
+  "checksum_override_version": true
+}

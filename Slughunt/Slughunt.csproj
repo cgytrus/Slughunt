@@ -1,0 +1,88 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <AssemblyTitle>Slughunt</AssemblyTitle>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.AutoPlugin" Version="1.1.0" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.Core" Version="5.4.17" PrivateAssets="all" />
+        <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" PrivateAssets="all" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <RainMeadowVersion>1.14.1</RainMeadowVersion>
+        <!--<RainMeadowHash>4AB4467A96AFA03F66D12A65317A85C2C7A17CBCB3D1FB3E4AF4685F1C20E654</RainMeadowHash>-->
+        <RainMeadowHash>BB491D92E1403091460278C1A715BD98F7FAC066EC284CAC8D78F86B17F03BFA</RainMeadowHash>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp">
+            <HintPath>..\libs\PUBLIC-Assembly-CSharp.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="HOOKS-Assembly-CSharp">
+            <HintPath>..\libs\HOOKS-Assembly-CSharp.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="Rain Meadow.dll">
+            <HintPath>..\libs\Rain Meadow.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+
+    <PropertyGroup>
+        <LibsDir>$(MSBuildProjectDirectory)/../libs</LibsDir>
+    </PropertyGroup>
+    <Target Name="StartDownloadRainMeadow" BeforeTargets="Restore;CollectPackageReferences">
+        <GetFileHash Files="$(LibsDir)/Rain Meadow.dll" Algorithm="SHA256" Condition="Exists('$(LibsDir)/Rain Meadow.dll')">
+            <Output TaskParameter="Hash" PropertyName="ExistingRainMeadowHash" />
+        </GetFileHash>
+        <Message Importance="high" Text="Rain Meadow.dll hash is '$(ExistingRainMeadowHash)'" />
+        <Message Importance="high" Text="expected hash is '$(RainMeadowHash)'" />
+
+        <CallTarget Targets="DownloadRainMeadow" Condition="'$(ExistingRainMeadowHash)'!='$(RainMeadowHash)'" />
+        <Message Importance="high" Text="hash matches, skipping download" Condition="'$(ExistingRainMeadowHash)'=='$(RainMeadowHash)'" />
+    </Target>
+    <Target Name="DownloadRainMeadow">
+        <Message Importance="high" Text="downloading rain meadow" />
+
+        <DownloadFile SourceUrl="https://github.com/henpemaz/Rain-Meadow/releases/download/$(RainMeadowVersion)/rainmeadow.$(RainMeadowVersion).zip" DestinationFolder="$(LibsDir)">
+            <Output TaskParameter="DownloadedFile" PropertyName="RainMeadowZip" />
+        </DownloadFile>
+        <Unzip DestinationFolder="$(LibsDir)" SourceFiles="$(RainMeadowZip)" />
+        <Delete Files="$(RainMeadowZip)" />
+        <Move SourceFiles="$(LibsDir)/rainmeadow/plugins/Rain Meadow.dll" DestinationFolder="$(LibsDir)" />
+        <RemoveDir Directories="$(LibsDir)/rainmeadow" />
+
+        <GetFileHash Files="$(LibsDir)/Rain Meadow.dll" Algorithm="SHA256" Condition="Exists('$(LibsDir)/Rain Meadow.dll')">
+            <Output TaskParameter="Hash" PropertyName="ExistingRainMeadowHash" />
+        </GetFileHash>
+        <Error Text="downloaded Rain Meadow.dll hash mismatch! expected '$(RainMeadowHash)', got '$(ExistingRainMeadowHash)'"
+               Condition="'$(ExistingRainMeadowHash)'!='$(RainMeadowHash)'" />
+    </Target>
+
+    <Target Name="SetupRemixFolder" AfterTargets="AfterBuild">
+        <Copy SourceFiles="$(OutDir)/Slughunt.dll" DestinationFolder="slughunt/plugins" />
+        <Copy SourceFiles="$(OutDir)/Slughunt.pdb" DestinationFolder="slughunt/plugins" />
+    </Target>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Security.Permissions.SecurityPermissionAttribute">
+            <_Parameter1>
+                #pragma warning disable CS0618
+                System.Security.Permissions.SecurityAction.RequestMinimum
+                #pragma warning restore CS0618
+            </_Parameter1>
+            <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+            <_Parameter2>SkipVerification = true</_Parameter2>
+            <_Parameter2_IsLiteral>true</_Parameter2_IsLiteral>
+        </AssemblyAttribute>
+    </ItemGroup>
+</Project>

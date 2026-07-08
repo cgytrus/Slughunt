@@ -1,0 +1,10 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+.idea/
+libs/
+*.DotSettings*
+/Slughunt/slughunt/plugins/
+workshopdata.json
