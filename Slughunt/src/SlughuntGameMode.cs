@@ -33,9 +33,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     public override ProcessManager.ProcessID MenuProcessId() => SlughuntMenu.id;
     public override PauseMenu CustomPauseMenu(ProcessManager manager, RainWorldGame game) => base.CustomPauseMenu(manager, game); // TODO?
 
-    public enum GameState : byte { Lobby, Game, Setup, Seek }
-    public enum PlayerRole : byte { None, Hunter, Hider }
-
     public override bool AllowedInMode(PlacedObject item) => !Blacklist.HasPlacedObject(item);
 
     public override bool ShouldLoadCreatures(RainWorldGame game, WorldSession ws) =>
@@ -58,6 +55,9 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (OnlineManager.instance.manager.currentMainLoop is not RainWorldGame)
             return;
         OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
+        if (!lobby.isOwner)
+            return;
+        lobbyData.state = GameState.Lobby;
     }
 
     public LobbyData lobbyData => lobby.GetData<LobbyData>();
@@ -109,7 +109,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     public void StartGame() {
-        if (!lobby.isOwner && !playerData.ready)
+        if (!playerData.ready || !lobby.isOwner && lobbyData.state == GameState.Lobby)
             return;
         ProcessManager manager = OnlineManager.instance.manager;
         if (ModManager.CoopAvailable)
@@ -131,9 +131,8 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             return;
         }
         CleanupOldAvatars();
-        if (OnlineManager.instance.manager.currentMainLoop is not RainWorldGame game)
-            return;
-        // TODO
+        if (OnlineManager.instance.manager.currentMainLoop is RainWorldGame game)
+            GameTick(game);
     }
 
     private void SetExpectedStateForProcess() {
@@ -143,7 +142,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             lobby.NewVersion();
         }
         else if (lobbyData.state == GameState.Lobby && process == ProcessManager.ProcessID.Game) {
-            lobbyData.state = GameState.Game;
+            lobbyData.state = GameState.Setup;
             lobby.NewVersion();
         }
         // once we are in game we control the state based on the gameplay in LobbyTick
@@ -180,13 +179,24 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
 
     public override void PreGameStart() {
         base.PreGameStart();
+        if (!lobby.isOwner)
+            return;
+        lobbyData.startingShelter = lobbyData.RandomShelter();
+        //lobbyData.startingShelter = "HI_S03";
+        lobby.NewVersion();
     }
 
     public override void PostGameStart(RainWorldGame game) {
         base.PostGameStart(game);
     }
 
+    private void GameTick(RainWorldGame game) {
+
+    }
+
     public override void GameShutDown(RainWorldGame game) {
         base.GameShutDown(game);
+        playerData.role = PlayerRole.None;
+        playerData.ready = false;
     }
 }

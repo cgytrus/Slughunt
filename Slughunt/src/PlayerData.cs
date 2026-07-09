@@ -5,30 +5,49 @@ using RainMeadow;
 namespace Slughunt;
 
 public class PlayerData : OnlineEntity.EntityData {
-    public SlughuntGameMode.PlayerRole role { get; set; }
-    public bool hunterCandidate { get; set; }
     public bool ready { get; set; }
+    // TODO: move to somewhere controlled by the lobby
+    public PlayerRole role { get; set; }
+    // TODO: points
+
+    public void SwitchSide() {
+        switch (role) {
+            case PlayerRole.None:
+                role = PlayerRole.PreferHunter;
+                break;
+            case PlayerRole.PreferHunter:
+                role = PlayerRole.None;
+                break;
+            case PlayerRole.Hunter:
+                role = PlayerRole.Hider;
+                break;
+            case PlayerRole.Hider:
+                role = PlayerRole.Hunter;
+                break;
+            default:
+                Plugin.logger.LogError($"unknown role? {role}");
+                break;
+        }
+    }
 
     public override EntityDataState MakeState(OnlineEntity entity, OnlineResource inResource) => new State(this);
 
+    [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
     public class State : EntityDataState {
-        [OnlineField, UsedImplicitly] private byte _role;
-        [OnlineField, UsedImplicitly] private bool _hunterCandidate;
-        [OnlineField, UsedImplicitly] private bool _ready;
+        [OnlineField] private bool _ready;
+        [OnlineField] private byte _role;
 
         public State() { }
 
         public State(PlayerData data) {
-            _role = (byte)data.role;
-            _hunterCandidate = data.hunterCandidate;
             _ready = data.ready;
+            _role = (byte)data.role;
         }
 
         public override void ReadTo(OnlineEntity.EntityData a, OnlineEntity b) {
             PlayerData data = (PlayerData)a;
-            data.role = (SlughuntGameMode.PlayerRole)_role;
-            data.hunterCandidate = _hunterCandidate;
             data.ready = _ready;
+            data.role = (PlayerRole)_role;
         }
 
         public override Type GetDataType() => typeof(PlayerData);

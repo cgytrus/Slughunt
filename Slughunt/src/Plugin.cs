@@ -244,8 +244,8 @@ public partial class Plugin : BaseUnityPlugin {
             if (!gameMode.clientSettings.TryGetData(out PlayerData playerData))
                 return;
             self.UpdateGraphic(playerData.role switch {
-                SlughuntGameMode.PlayerRole.Hunter => 0,
-                SlughuntGameMode.PlayerRole.Hider => 4,
+                PlayerRole.Hunter => 0,
+                PlayerRole.Hider => 4,
                 _ => 9
             }, 9);
         };
@@ -269,40 +269,61 @@ public partial class Plugin : BaseUnityPlugin {
                 orig(self);
                 return;
             }
-
-            // fade from black on respawn
-            // TODO: maybe figure out fade to black too
-            self.manager.fadeToBlack = 1.0f;
-
-            if (self.Players[0].realizedCreature is Player realizedPlayer) {
-                realizedPlayer.AllGraspsLetGoOfThisObject(true);
-                realizedPlayer.LoseAllGrasps();
-                realizedPlayer.Destroy();
-            }
-            self.Players[0].Destroy();
-            self.Players.RemoveAt(0);
-
-            string shelter = gameMode.lobbyData.RandomShelter().ToUpperInvariant();
-
-            string shelterRegion = shelter.Split('_')[0];
-            if (shelterRegion != self.world.region.name.ToUpperInvariant()) {
-                LoadWorld(self, shelterRegion);
-            }
-
-            SpawnRoom(self, shelter);
-
-            // exit game over mode
-            self.cameras[0].hud.textPrompt.gameOverMode = false;
-
-            // prevent pause
-            self.lastPauseButton = true;
+            ApplyRespawnRule(self, gameMode);
         };
     }
 
-    private static void SpawnRoom(RainWorldGame game, string roomName) {
-        AbstractRoom? room = game.world.GetAbstractRoom(roomName);
-        if (room is null)
+    private static void ApplyCatchRule(RainWorldGame game, SlughuntGameMode gameMode) {
+        // TODO
+    }
+
+    private static void ApplyRespawnRule(RainWorldGame game, SlughuntGameMode gameMode) {
+        // TODO: update the game over text
+        // TODO: spectate
+        // no respawning in non endless unless we didnt actually start playing yet
+        if (gameMode.lobbyData is { endless: false, state: GameState.Hide or GameState.Hunt })
             return;
+
+        RespawnPlayer(game, gameMode.lobbyData.RandomShelter());
+        game.cameras[0].hud.textPrompt.gameOverMode = false; // exit game over mode
+        game.lastPauseButton = true; // prevent pause
+        game.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
+
+        // no onrespawn rules in non endless
+        if (!gameMode.lobbyData.endless)
+            return;
+
+        Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(gameMode.playerData.role);
+        switch (rule) {
+            case Rules.OnRespawn.Nothing:
+                break;
+            case Rules.OnRespawn.SwitchSide:
+                gameMode.playerData.SwitchSide();
+                break;
+            default:
+                logger.LogError($"unknown rule? {rule}");
+                break;
+        }
+    }
+
+    private static void RespawnPlayer(RainWorldGame game, string roomName) {
+        if (game.Players[0].realizedCreature is Player realizedPlayer) {
+            realizedPlayer.AllGraspsLetGoOfThisObject(true);
+            realizedPlayer.LoseAllGrasps();
+            realizedPlayer.Destroy();
+        }
+        game.Players[0].Destroy();
+        game.Players.RemoveAt(0);
+
+        string regionName = roomName.Split('_')[0];
+        if (!string.Equals(regionName, game.world.region.name, StringComparison.OrdinalIgnoreCase))
+            LoadWorld(game, regionName);
+
+        AbstractRoom? room = game.world.GetAbstractRoom(roomName);
+        if (room is null) {
+            logger.LogError($"tried to spawn in room {roomName} that doesnt exist in region {game.world.name}");
+            return;
+        }
 
         game.SpawnPlayers(true, false, false, false, new WorldCoordinate(room.index, 0, 0, -1));
 

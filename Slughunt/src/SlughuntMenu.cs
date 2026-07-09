@@ -91,20 +91,35 @@ public class SlughuntMenu : SmartMenu {
             _text.Append(_name);
             if (lobby.owner == _player)
                 _text.Append(" ^");
-            if (!hasSettings)
+            if (!hasSettings) {
                 _text.Append(" ...");
+                _label.label.text = _text.ToString();
+                return;
+            }
+            if (settings.inGame) {
+                _text.Append(" (in game)");
+            }
             _label.label.text = _text.ToString();
 
-            if (!hasSettings)
-                return;
-
             HSLColor color;
-            if (data.hunterCandidate) {
-                color = MenuColor(MenuColors.DarkRed);
-                color.lightness = data.ready ? 0.8f : 0.67f;
-            }
-            else {
-                color = MenuColor(data.ready ? MenuColors.White : MenuColors.MediumGrey);
+            switch (data.role) {
+                case PlayerRole.None:
+                    color = MenuColor(data.ready ? MenuColors.White : MenuColors.MediumGrey);
+                    break;
+                case PlayerRole.PreferHunter:
+                    color = MenuColor(MenuColors.DarkRed);
+                    color.lightness = data.ready ? 0.67f : 0.5f;
+                    break;
+                case PlayerRole.Hunter:
+                    color = MenuColor(MenuColors.DarkRed);
+                    color.lightness = 0.67f;
+                    break;
+                case PlayerRole.Hider:
+                    color = new HSLColor(0.6f, 0.65f, 0.67f);
+                    break;
+                default:
+                    color = MenuColor(MenuColors.White);
+                    break;
             }
             _label.label.color = color.rgb;
         }
@@ -117,9 +132,6 @@ public class SlughuntMenu : SmartMenu {
 
     public SlughuntMenu(ProcessManager manager) : base(manager, id) {
         backTarget = RainMeadow.RainMeadow.Ext_ProcessID.LobbySelectMenu;
-
-        playerData.ready = false;
-        playerData.hunterCandidate = false;
 
         _readyButton = new SimplerButton(
             this, mainPage,
@@ -137,7 +149,7 @@ public class SlughuntMenu : SmartMenu {
             _readyButton.pos + new Vector2(0f, _readyButton.size.y + 10f), new Vector2(110f, 30f)
         );
         _hunterButton.OnClick += _ => {
-            playerData.hunterCandidate = !playerData.hunterCandidate;
+            playerData.SwitchSide();
         };
         mainPage.subObjects.Add(_hunterButton);
 
@@ -145,14 +157,7 @@ public class SlughuntMenu : SmartMenu {
             new Vector2(1056f - _readyButton.size.x - 10f, 50f), new Vector2(110f, 30f),
             Translate("START")
         );
-        _startButton.OnClick += _ => {
-            if (!lobby.isOwner)
-                return;
-            lobbyData.startingShelter = lobbyData.RandomShelter();
-            //lobbyData.startingShelter = "HI_S03";
-            lobby.NewVersion();
-            gameMode.StartGame();
-        };
+        _startButton.OnClick += _ => gameMode.StartGame();
         _ = new UIelementWrapper(tabWrapper, _startButton);
 
         _forceStartButton = new OpHoldButton(
@@ -161,14 +166,7 @@ public class SlughuntMenu : SmartMenu {
         ) {
             description = "Only ready players will enter the game"
         };
-        _forceStartButton.OnPressDone += _ => {
-            if (!lobby.isOwner)
-                return;
-            lobbyData.startingShelter = lobbyData.RandomShelter();
-            //lobbyData.startingShelter = "HI_S03";
-            lobby.NewVersion();
-            gameMode.StartGame();
-        };
+        _forceStartButton.OnPressDone += _ => gameMode.StartGame();
         _ = new UIelementWrapper(tabWrapper, _forceStartButton);
 
         EventfulScrollButton playersUpButton = new(
@@ -439,8 +437,18 @@ public class SlughuntMenu : SmartMenu {
         else
             OtherUpdate();
 
-        _readyButton.menuLabel.text = Translate(playerData.ready ? "NOT READY" : "READY");
-        _hunterButton.menuLabel.text = Translate(playerData.hunterCandidate ? "HUNTER?" : "HIDER");
+        _hunterButton.menuLabel.text = Translate(playerData.role == PlayerRole.PreferHunter ? "nvm" : "WANT HUNTER");
+
+        if (lobbyData.state == GameState.Lobby) {
+            _hunterButton.inactive = false;
+
+            _readyButton.menuLabel.text = Translate(playerData.ready ? "NOT READY" : "READY");
+        }
+        else {
+            _hunterButton.inactive = true;
+
+            _readyButton.menuLabel.text = Translate("ENTER");
+        }
     }
 
     private void OwnerUpdate() {
@@ -451,6 +459,7 @@ public class SlughuntMenu : SmartMenu {
         else {
             _startButton.Hide();
             _forceStartButton.Show();
+            _forceStartButton.greyedOut = !playerData.ready;
         }
 
         _spawnCreatures.inactive = false;
