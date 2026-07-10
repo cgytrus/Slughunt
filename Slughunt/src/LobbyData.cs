@@ -35,6 +35,7 @@ public class LobbyData : OnlineResource.ResourceData {
 
     // gameplay state
     public GameState state { get; set; }
+    public uint switchedStateAt { get; set; }
 
     public string RandomShelter() => shelters.ElementAtOrDefault(Random.Range(0, shelters.Count)) ?? DefaultShelter;
 
@@ -60,6 +61,7 @@ public class LobbyData : OnlineResource.ResourceData {
         [OnlineField] private byte _taunts;
 
         [OnlineField] private byte _state;
+        [OnlineField] private uint _switchedStateAt;
 
         public State() { }
         public State(LobbyData data) {
@@ -78,6 +80,7 @@ public class LobbyData : OnlineResource.ResourceData {
             _hiderCompass = (byte)data.hiderCompass;
             _taunts = (byte)data.taunts;
             _state = (byte)data.state;
+            _switchedStateAt = data.switchedStateAt;
         }
 
         public override void ReadTo(OnlineResource.ResourceData a, OnlineResource b) {
@@ -97,6 +100,7 @@ public class LobbyData : OnlineResource.ResourceData {
             data.hiderCompass = (CompassMode)_hiderCompass;
             data.taunts = (TauntMode)_taunts;
             data.state = (GameState)_state;
+            data.switchedStateAt = _switchedStateAt;
         }
 
         public override Type GetDataType() => typeof(LobbyData);

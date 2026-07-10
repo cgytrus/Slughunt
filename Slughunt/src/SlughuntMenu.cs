@@ -459,8 +459,9 @@ public class SlughuntMenu : SmartMenu {
         else {
             _startButton.Hide();
             _forceStartButton.Show();
-            _forceStartButton.greyedOut = !playerData.ready;
         }
+        _startButton.greyedOut = !playerData.ready || OnlineManager.players.Count < 2;
+        _forceStartButton.greyedOut = _startButton.greyedOut;
 
         _spawnCreatures.inactive = false;
         _campaignSelector.greyedOut = false;

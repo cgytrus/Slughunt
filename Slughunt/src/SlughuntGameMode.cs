@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Menu;
 using RainMeadow;
@@ -58,6 +60,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (!lobby.isOwner)
             return;
         lobbyData.state = GameState.Lobby;
+        lobbyData.switchedStateAt = lobby.owner.tick;
     }
 
     public LobbyData lobbyData => lobby.GetData<LobbyData>();
@@ -109,7 +112,9 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     public void StartGame() {
-        if (!playerData.ready || !lobby.isOwner && lobbyData.state == GameState.Lobby)
+        if (!playerData.ready ||
+            !lobby.isOwner && lobbyData.state == GameState.Lobby ||
+            OnlineManager.players.Count < 2)
             return;
         ProcessManager manager = OnlineManager.instance.manager;
         if (ModManager.CoopAvailable)
@@ -139,10 +144,12 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         ProcessManager.ProcessID? process = OnlineManager.instance.manager.currentMainLoop?.ID;
         if (lobbyData.state != GameState.Lobby && process != ProcessManager.ProcessID.Game) {
             lobbyData.state = GameState.Lobby;
+            lobbyData.switchedStateAt = lobby.owner.tick;
             lobby.NewVersion();
         }
         else if (lobbyData.state == GameState.Lobby && process == ProcessManager.ProcessID.Game) {
             lobbyData.state = GameState.Setup;
+            lobbyData.switchedStateAt = lobby.owner.tick;
             lobby.NewVersion();
         }
         // once we are in game we control the state based on the gameplay in LobbyTick
@@ -179,19 +186,117 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
 
     public override void PreGameStart() {
         base.PreGameStart();
-        if (!lobby.isOwner)
-            return;
-        lobbyData.startingShelter = lobbyData.RandomShelter();
-        //lobbyData.startingShelter = "HI_S03";
-        lobby.NewVersion();
+        PrepareRound();
     }
 
     public override void PostGameStart(RainWorldGame game) {
         base.PostGameStart(game);
     }
 
-    private void GameTick(RainWorldGame game) {
+    private void PrepareRound() {
+        // TODO: assign roles to players
+        if (!lobby.isOwner)
+            return;
+        lobbyData.state = GameState.Setup;
+        lobbyData.switchedStateAt = lobby.owner.tick;
+        lobbyData.startingShelter = lobbyData.RandomShelter();
+        //lobbyData.startingShelter = "HI_S03";
+        lobby.NewVersion();
+    }
 
+    private void GameTick(RainWorldGame game) {
+        switch (lobbyData.state) {
+            case GameState.Setup:
+                SetupTick(game);
+                break;
+            case GameState.Hide:
+                HideTick(game);
+                break;
+            case GameState.Hunt:
+                HuntTick(game);
+                break;
+            case GameState.Lobby:
+            default:
+                Plugin.logger.LogError($"invalid game state {lobbyData.state}");
+                break;
+        }
+    }
+
+    private void SetupTick(RainWorldGame game) {
+        StunOrManageShortcut(game, false);
+        if (!lobby.isOwner)
+            return;
+        bool allHidersInShortcuts = true;
+        foreach (ClientSettings settings in lobby.clientSettings.Values) {
+            if (!settings.TryGetData(out PlayerData data))
+                continue;
+            if (data.role != PlayerRole.Hider)
+                continue;
+            allHidersInShortcuts = allHidersInShortcuts && settings.avatars
+                .All(x => x.FindEntity(true) is OnlineCreature {
+                    realized: true,
+                    realizedCreature.inShortcut: true
+                });
+        }
+        if (!allHidersInShortcuts)
+            return;
+        lobbyData.state = GameState.Hide;
+        lobbyData.switchedStateAt = lobby.owner.tick;
+        lobby.NewVersion();
+    }
+
+    private void HideTick(RainWorldGame game) {
+        StunOrManageShortcut(game, true);
+    }
+
+    private void StunOrManageShortcut(RainWorldGame game, bool hide) {
+        Player? player = game.FirstRealizedPlayer;
+        if (player is null)
+            return;
+        switch (playerData.role) {
+            case PlayerRole.Hunter:
+                player.stun = (int)(40 * lobbyData.hideTime.TotalSeconds);
+                break;
+            case PlayerRole.Hider when player.inShortcut:
+                player.inShortcutVessel?.wait = hide ? 0 : 2;
+                break;
+            case PlayerRole.None:
+            case PlayerRole.PreferHunter:
+            default:
+                break;
+        }
+    }
+
+    private void HuntTick(RainWorldGame game) {
+        if (!lobby.isOwner)
+            return;
+        bool anyHunters = false;
+        bool anyHiders = false;
+        foreach (ClientSettings settings in lobby.clientSettings.Values) {
+            if (!settings.TryGetData(out PlayerData data))
+                continue;
+            anyHunters = anyHunters || data.role == PlayerRole.Hunter && settings.avatars
+                .Any(x => x.FindEntity(true) is OnlineCreature {
+                    abstractCreature.state.alive: true
+                });
+            anyHiders = anyHiders || data.role == PlayerRole.Hider && settings.avatars
+                .Any(x => x.FindEntity(true) is OnlineCreature {
+                    abstractCreature.state.alive: true
+                });
+            if (anyHiders && anyHunters)
+                break;
+        }
+        if (!anyHunters || !anyHiders)
+            EndRound(game);
+    }
+
+    private void EndRound(RainWorldGame game) {
+        if (!lobbyData.endless) {
+            OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
+            return;
+        }
+        PrepareRound();
+        Plugin.RespawnPlayer(game, lobbyData.startingShelter);
     }
 
     public override void GameShutDown(RainWorldGame game) {
