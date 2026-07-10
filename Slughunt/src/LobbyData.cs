@@ -29,9 +29,9 @@ public class LobbyData : OnlineResource.ResourceData {
     public TimeSpan hideTime { get; set; } = TimeSpan.FromSeconds(6.0);
     public Ruleset ruleset { get; set; } = Ruleset.manhunt;
     public bool endless { get; set; }
-    public CompassMode hunterCompass { get; set; } = CompassMode.Off;
-    public CompassMode hiderCompass { get; set; } = CompassMode.Off;
-    public TauntMode taunts { get; set; } = TauntMode.Off;
+    public CompassMode hunterCompass { get; set; } = CompassMode.Off; // TODO
+    public CompassMode hiderCompass { get; set; } = CompassMode.Off; // TODO
+    public TauntMode taunts { get; set; } = TauntMode.Off; // TODO
 
     // gameplay state
     public GameState state { get; set; }
