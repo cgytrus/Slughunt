@@ -4,7 +4,6 @@ using System.Linq;
 using JetBrains.Annotations;
 using RainMeadow;
 using Slughunt.Serialization;
-using Random = UnityEngine.Random;
 
 namespace Slughunt;
 
@@ -27,6 +26,7 @@ public class LobbyData : OnlineResource.ResourceData {
 
     // gameplay settings
     public TimeSpan hideTime { get; set; } = TimeSpan.FromSeconds(6.0);
+    public double hideTimeFrames => OnlineManager.instance.framesPerSecond * hideTime.TotalSeconds;
     public Ruleset ruleset { get; set; } = Ruleset.manhunt;
     public bool endless { get; set; }
     public CompassMode hunterCompass { get; set; } = CompassMode.Off; // TODO
@@ -36,8 +36,23 @@ public class LobbyData : OnlineResource.ResourceData {
     // gameplay state
     public GameState state { get; set; }
     public uint switchedStateAt { get; set; }
+    private Dictionary<OnlinePlayer, PlayerData> playerData { get; } = [];
 
-    public string RandomShelter() => shelters.ElementAtOrDefault(Random.Range(0, shelters.Count)) ?? DefaultShelter;
+    public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;
+
+    public void CleanupOldPlayerData() {
+        foreach (OnlinePlayer player in playerData.Keys.Where(x => x.hasLeft).ToList()) {
+            playerData.Remove(player);
+        }
+    }
+
+    public PlayerData GetPlayerData(OnlinePlayer player) {
+        if (playerData.TryGetValue(player, out PlayerData? data))
+            return data;
+        data = new PlayerData();
+        playerData[player] = data;
+        return data;
+    }
 
     public override ResourceDataState MakeState(OnlineResource resource) => new State(this);
 
@@ -62,6 +77,7 @@ public class LobbyData : OnlineResource.ResourceData {
 
         [OnlineField] private byte _state;
         [OnlineField] private uint _switchedStateAt;
+        [OnlineField] private DynamicPlayerData _playerData = new([]);
 
         public State() { }
         public State(LobbyData data) {
@@ -81,6 +97,7 @@ public class LobbyData : OnlineResource.ResourceData {
             _taunts = (byte)data.taunts;
             _state = (byte)data.state;
             _switchedStateAt = data.switchedStateAt;
+            _playerData = new DynamicPlayerData(data.playerData);
         }
 
         public override void ReadTo(OnlineResource.ResourceData a, OnlineResource b) {
@@ -101,6 +118,7 @@ public class LobbyData : OnlineResource.ResourceData {
             data.taunts = (TauntMode)_taunts;
             data.state = (GameState)_state;
             data.switchedStateAt = _switchedStateAt;
+            _playerData.ReadTo(data.playerData);
         }
 
         public override Type GetDataType() => typeof(LobbyData);

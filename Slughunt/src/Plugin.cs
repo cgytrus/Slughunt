@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using BepInEx;
 using BepInEx.Logging;
 using HUD;
+using JetBrains.Annotations;
 using MonoMod.RuntimeDetour;
 using MoreSlugcats;
 using RainMeadow;
@@ -268,8 +269,8 @@ public partial class Plugin : BaseUnityPlugin {
             orig(self, otherObject, myChunk, otherChunk);
             if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
                 return;
-            ApplyCatchRules(self, otherObject, gameMode);
-            ApplyCatchRules(otherObject, self, gameMode);
+            OnCatch(self, otherObject, gameMode);
+            OnCatch(otherObject, self, gameMode);
         };
         // TODO: maybe could make it so that its not only rocks?
         On.Rock.HitSomething += (orig, self, result, eu) => {
@@ -277,12 +278,12 @@ public partial class Plugin : BaseUnityPlugin {
                 return false;
             if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
                 return true;
-            ApplyCatchRules(self.thrownBy, result.obj, gameMode);
+            OnCatch(self.thrownBy, result.obj, gameMode);
             return true;
         };
     }
 
-    private static void ApplyCatchRules(PhysicalObject hunterObj, PhysicalObject hiderObj, SlughuntGameMode gameMode) {
+    private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj, SlughuntGameMode gameMode) {
         if (gameMode.lobbyData.state != GameState.Hunt)
             return;
         // TODO: maybe make it so you could play with scavengers or something lol, lol
@@ -302,93 +303,98 @@ public partial class Plugin : BaseUnityPlugin {
         if (self is null)
             return;
 
-        Player? other;
-        PlayerRole selfRole;
-        PlayerRole otherRole;
         if (self == hunter) {
-            other = hider;
-            selfRole = PlayerRole.Hunter;
-            otherRole = PlayerRole.Hider;
+            if (gameMode.playerData.role != PlayerRole.Hunter)
+                return;
+            if (!TryGetOnlinePlayer(hider, out OnlinePlayer? hiderOnline))
+                return;
+            if (gameMode.lobbyData.GetPlayerData(hiderOnline).role != PlayerRole.Hider)
+                return;
+            gameMode.lobby.owner.InvokeOnceRPC(HostOnCatchAsHunter, hiderOnline);
         }
         else if (self == hider) {
-            other = hunter;
-            selfRole = PlayerRole.Hider;
-            otherRole = PlayerRole.Hunter;
+            if (gameMode.playerData.role != PlayerRole.Hider)
+                return;
+            if (!TryGetOnlinePlayer(hunter, out OnlinePlayer? hunterOnline))
+                return;
+            if (gameMode.lobbyData.GetPlayerData(hunterOnline).role != PlayerRole.Hunter)
+                return;
+            gameMode.lobby.owner.InvokeOnceRPC(HostOnCatchAsHider, hunterOnline);
         }
-        else {
-            return;
-        }
-
-        if (gameMode.playerData.role != selfRole)
-            return;
-
-        if (!TryGetSettings(other, out ClientSettings? otherSettings))
-            return;
-        if (!otherSettings.TryGetData(out PlayerData otherData))
-            return;
-        if (otherData.role != otherRole)
-            return;
-
-        ApplyCatchRule(self, gameMode);
-        otherSettings.owner.InvokeRPC(RemoteCatch, (byte)otherData.role, otherData.roleCaught);
     }
 
-    private static bool TryGetSettings(Player player, [NotNullWhen(true)] out ClientSettings? settings) {
-        settings = null;
-        return player.abstractPhysicalObject.GetOnlineObject(out OnlinePhysicalObject? online) &&
-            online?.owner is not null &&
-            OnlineManager.lobby.clientSettings.TryGetValue(online.owner, out settings);
+    private static bool TryGetOnlinePlayer(Player player, [NotNullWhen(true)] out OnlinePlayer? online) {
+        online = null;
+        if (!player.abstractPhysicalObject.GetOnlineObject(out OnlinePhysicalObject? opo))
+            return false;
+        online = opo?.owner;
+        return online is not null;
     }
 
     [RPCMethod]
-    private static void RemoteCatch(RPCEvent rpcEvent, byte expectedRole, uint expectedCaught) {
-        // how even
+    private static void HostOnCatchAsHunter(RPCEvent rpcEvent, OnlinePlayer hider) =>
+        HostOnCatch(rpcEvent.from, hider);
+
+    [RPCMethod]
+    private static void HostOnCatchAsHider(RPCEvent rpcEvent, OnlinePlayer hunter) =>
+        HostOnCatch(hunter, rpcEvent.from);
+
+    private static void HostOnCatch(OnlinePlayer hunter, OnlinePlayer hider) {
         if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
             return;
-        if (OnlineManager.instance.manager.currentMainLoop is not RainWorldGame game)
+        PlayerData hunterData = gameMode.lobbyData.GetPlayerData(hunter);
+        PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
+        if (hunterData.role != PlayerRole.Hunter || hiderData.role != PlayerRole.Hider)
+            return;
+        // became hunter less than hide time ago, cant catch
+        if (hunter.tick - hunterData.switchedRolesAt < (long)gameMode.lobbyData.hideTimeFrames)
             return;
 
-        Player? self = game.FirstRealizedPlayer;
-        if (self is null)
-            return;
+        hunterData.caughtAsHunter++;
+        hiderData.caughtAsHider++;
 
-        // probably already processed locally
-        if (gameMode.playerData.role != (PlayerRole)expectedRole)
-            return;
-        if (gameMode.playerData.roleCaught > expectedCaught)
-            return;
-        if (self.dead)
-            return;
+        ApplyCatchRule(gameMode, hunter, hunterData);
+        ApplyCatchRule(gameMode, hider, hiderData);
 
-        ApplyCatchRule(self, gameMode);
+        gameMode.lobby.NewVersion();
     }
 
-    private static void ApplyCatchRule(Player player, SlughuntGameMode gameMode) {
-        // TODO: maybe play the sound for everyone in the room?
-        player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
-
-        if (gameMode.playerData.role == PlayerRole.Hunter)
-            gameMode.playerData.caughtAsHunter++;
-        else
-            gameMode.playerData.caughtAsHider++;
-
+    private static void ApplyCatchRule(SlughuntGameMode gameMode, OnlinePlayer player, PlayerData data) {
+        bool die = false;
+        int stun = 0;
         Rules.OnCatch rule = gameMode.lobbyData.ruleset.GetCatchRuleFor(gameMode.playerData.role);
         switch (rule) {
             case Rules.OnCatch.Nothing:
                 break;
             case Rules.OnCatch.Death:
-                player.Die();
+                die = true;
                 break;
             case Rules.OnCatch.SwitchSide:
-                gameMode.playerData.SwitchSide();
+                data.SwitchSide();
                 // TODO: separate hide time and catch stun time?
-                if (gameMode.playerData.role == PlayerRole.Hunter)
-                    player.Stun((int)(40 * gameMode.lobbyData.hideTime.TotalSeconds));
+                if (data.role == PlayerRole.Hunter)
+                    stun = (int)(40 * gameMode.lobbyData.hideTime.TotalSeconds);
                 break;
             default:
                 logger.LogError($"unknown rule? {rule}");
                 break;
         }
+        player.InvokeRPC(ClientOnCatchConfirm, die, stun);
+    }
+
+    [RPCMethod, UsedImplicitly]
+    private static void ClientOnCatchConfirm(RPCEvent rpcEvent, bool die, int stun) {
+        if (OnlineManager.instance.manager.currentMainLoop is not RainWorldGame game)
+            return;
+        Player? player = game.FirstRealizedPlayer;
+        if (player is null)
+            return;
+        if (die)
+            player.Die();
+        if (stun > 0)
+            player.Stun(stun);
+        // TODO: maybe play the sound for everyone in the room?
+        player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
     }
 
     private static void RespawnRule() {
@@ -397,41 +403,24 @@ public partial class Plugin : BaseUnityPlugin {
                 orig(self);
                 return;
             }
-            ApplyRespawnRule(self, gameMode);
+
+            // TODO: update the game over text
+            // TODO: spectate
+            // no respawning in non endless
+            if (!gameMode.lobbyData.endless)
+                return;
+
+            Respawn(self, gameMode.lobbyData.RandomShelter());
+            self.cameras[0].hud.textPrompt.gameOverMode = false; // exit game over mode
+            self.lastPauseButton = true; // prevent pause
+            self.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
+
+            gameMode.lobby.owner.InvokeRPC(HostOnRespawn);
         };
     }
 
-    private static void ApplyRespawnRule(RainWorldGame game, SlughuntGameMode gameMode) {
-        // TODO: update the game over text
-        // TODO: spectate
-        // no respawning in non endless unless we didnt actually start playing yet
-        if (gameMode.lobbyData is { endless: false, state: GameState.Hide or GameState.Hunt })
-            return;
-
-        RespawnPlayer(game, gameMode.lobbyData.RandomShelter());
-        game.cameras[0].hud.textPrompt.gameOverMode = false; // exit game over mode
-        game.lastPauseButton = true; // prevent pause
-        game.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
-
-        // no onrespawn rules in non endless
-        if (!gameMode.lobbyData.endless)
-            return;
-
-        Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(gameMode.playerData.role);
-        switch (rule) {
-            case Rules.OnRespawn.Nothing:
-                break;
-            case Rules.OnRespawn.SwitchSide:
-                gameMode.playerData.SwitchSide();
-                break;
-            default:
-                logger.LogError($"unknown rule? {rule}");
-                break;
-        }
-    }
-
     // seems to work fine?
-    public static void RespawnPlayer(RainWorldGame game, string roomName) {
+    public static void Respawn(RainWorldGame game, string roomName) {
         if (game.Players[0].realizedCreature is Player realizedPlayer) {
             realizedPlayer.AllGraspsLetGoOfThisObject(true);
             realizedPlayer.LoseAllGrasps();
@@ -492,5 +481,24 @@ public partial class Plugin : BaseUnityPlugin {
 
         foreach (Room room in oldWorld.activeRooms)
             room.Unloaded();
+    }
+
+    [RPCMethod]
+    private static void HostOnRespawn(RPCEvent rpcEvent) {
+        if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            return;
+        PlayerData playerData = gameMode.lobbyData.GetPlayerData(rpcEvent.from);
+        Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(playerData.role);
+        switch (rule) {
+            case Rules.OnRespawn.Nothing:
+                break;
+            case Rules.OnRespawn.SwitchSide:
+                playerData.SwitchSide();
+                gameMode.lobby.NewVersion();
+                break;
+            default:
+                logger.LogError($"unknown rule? {rule}");
+                break;
+        }
     }
 }

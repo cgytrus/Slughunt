@@ -57,7 +57,7 @@ public class SlughuntMenu : SmartMenu {
         private readonly OnlinePlayer _player;
         private bool hasSettings => lobby.clientSettings.ContainsKey(_player);
         private ClientSettings settings => lobby.clientSettings[_player];
-        private PlayerData data => settings.GetData<PlayerData>();
+        private PlayerData data => lobbyData.GetPlayerData(_player);
 
         private readonly string _name;
 
@@ -139,7 +139,7 @@ public class SlughuntMenu : SmartMenu {
             new Vector2(1056f, 50f), new Vector2(110f, 30f)
         );
         _readyButton.OnClick += _ => {
-            playerData.ready = !playerData.ready;
+            lobby.owner.InvokeRPC(SwitchReady);
         };
         mainPage.subObjects.Add(_readyButton);
 
@@ -149,7 +149,7 @@ public class SlughuntMenu : SmartMenu {
             _readyButton.pos + new Vector2(0f, _readyButton.size.y + 10f), new Vector2(110f, 30f)
         );
         _hunterButton.OnClick += _ => {
-            playerData.SwitchSide();
+            lobby.owner.InvokeRPC(SwitchSide);
         };
         mainPage.subObjects.Add(_hunterButton);
 
@@ -452,7 +452,7 @@ public class SlughuntMenu : SmartMenu {
     }
 
     private void OwnerUpdate() {
-        if (lobby.clientSettings.All(x => x.Value.TryGetData(out PlayerData data) && data.ready)) {
+        if (OnlineManager.players.All(x => lobbyData.GetPlayerData(x).ready)) {
             _startButton.Show();
             _forceStartButton.Hide();
         }
@@ -627,5 +627,19 @@ public class SlughuntMenu : SmartMenu {
             _players.Add(card);
             pages[0].subObjects.Add(card);
         }
+    }
+
+    [RPCMethod]
+    private static void SwitchReady(RPCEvent rpcEvent) {
+        PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
+        data.ready = !data.ready;
+        lobby.NewVersion();
+    }
+
+    [RPCMethod]
+    private static void SwitchSide(RPCEvent rpcEvent) {
+        PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
+        data.SwitchSide();
+        lobby.NewVersion();
     }
 }

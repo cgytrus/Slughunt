@@ -1,10 +1,9 @@
-﻿using System;
-using JetBrains.Annotations;
+﻿using System.IO;
 using RainMeadow;
 
 namespace Slughunt;
 
-public class PlayerData : OnlineEntity.EntityData {
+public record PlayerData {
     public bool ready { get; set; }
     public PlayerRole role { get; set; }
     public uint switchedRolesAt { get; private set; }
@@ -58,41 +57,23 @@ public class PlayerData : OnlineEntity.EntityData {
         }
     }
 
-    public override EntityDataState MakeState(OnlineEntity entity, OnlineResource inResource) => new State(this);
-
-    [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-    public class State : EntityDataState {
-        [OnlineField] private bool _ready;
-        [OnlineField] private byte _role;
-        [OnlineField] private uint _switchedRolesAt;
-        [OnlineField] private uint _timeAsHunter;
-        [OnlineField] private uint _timeAsHider;
-        [OnlineField] private uint _caughtAsHunter;
-        [OnlineField] private uint _caughtAsHider;
-
-        public State() { }
-
-        public State(PlayerData data) {
-            _ready = data.ready;
-            _role = (byte)data.role;
-            _switchedRolesAt = data.switchedRolesAt;
-            _timeAsHunter = data.timeAsHunter;
-            _timeAsHider = data.timeAsHider;
-            _caughtAsHunter = data.caughtAsHunter;
-            _caughtAsHider = data.caughtAsHider;
-        }
-
-        public override void ReadTo(OnlineEntity.EntityData a, OnlineEntity b) {
-            PlayerData data = (PlayerData)a;
-            data.ready = _ready;
-            data.role = (PlayerRole)_role;
-            data.switchedRolesAt = _switchedRolesAt;
-            data.timeAsHunter = _timeAsHunter;
-            data.timeAsHider = _timeAsHider;
-            data.caughtAsHunter = _caughtAsHunter;
-            data.caughtAsHider = _caughtAsHider;
-        }
-
-        public override Type GetDataType() => typeof(PlayerData);
+    public void Write(BinaryWriter writer) {
+        writer.Write(ready);
+        writer.Write((byte)role);
+        writer.Write(switchedRolesAt);
+        writer.Write(timeAsHunter);
+        writer.Write(timeAsHider);
+        writer.Write(caughtAsHunter);
+        writer.Write(caughtAsHider);
     }
+
+    public static PlayerData Read(BinaryReader reader) => new() {
+        ready = reader.ReadBoolean(),
+        role = (PlayerRole)reader.ReadByte(),
+        switchedRolesAt = reader.ReadUInt32(),
+        timeAsHunter = reader.ReadUInt32(),
+        timeAsHider = reader.ReadUInt32(),
+        caughtAsHunter = reader.ReadUInt32(),
+        caughtAsHider = reader.ReadUInt32()
+    };
 }

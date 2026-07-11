@@ -64,7 +64,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     public LobbyData lobbyData => lobby.GetData<LobbyData>();
-    public PlayerData playerData => clientSettings.GetData<PlayerData>();
+    public PlayerData playerData => lobbyData.GetPlayerData(OnlineManager.mePlayer);
 
     public SlugcatStats.Name character => lobbyData.campaign;
     public SlugcatStats.Timeline timeline => SlugcatStats.SlugcatToTimeline(lobbyData.campaign);
@@ -80,10 +80,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (resource is Lobby lob) {
             lob.AddData(new LobbyData());
         }
-    }
-
-    public override void AddClientData() {
-        clientSettings.AddData(new PlayerData());
     }
 
     public override AbstractCreature SpawnAvatar(RainWorldGame game, WorldCoordinate location) {
@@ -135,6 +131,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         else if (!TrySwitchToExpectedProcess()) {
             return;
         }
+        lobbyData.CleanupOldPlayerData();
         CleanupOldAvatars();
         if (OnlineManager.instance.manager.currentMainLoop is RainWorldGame game)
             GameTick(game);
@@ -228,8 +225,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             return;
         bool allHidersInShortcuts = true;
         foreach (ClientSettings settings in lobby.clientSettings.Values) {
-            if (!settings.TryGetData(out PlayerData data))
-                continue;
+            PlayerData data = lobbyData.GetPlayerData(settings.owner);
             if (data.role != PlayerRole.Hider)
                 continue;
             allHidersInShortcuts = allHidersInShortcuts && settings.avatars
@@ -273,8 +269,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         bool anyHunters = false;
         bool anyHiders = false;
         foreach (ClientSettings settings in lobby.clientSettings.Values) {
-            if (!settings.TryGetData(out PlayerData data))
-                continue;
+            PlayerData data = lobbyData.GetPlayerData(settings.owner);
             anyHunters = anyHunters || data.role == PlayerRole.Hunter && (lobbyData.endless || settings.avatars
                 .Any(x => x.FindEntity(true) is OnlineCreature { abstractCreature.state.alive: true }));
             anyHiders = anyHiders || data.role == PlayerRole.Hider && (lobbyData.endless || settings.avatars
@@ -292,12 +287,17 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             return;
         }
         PrepareRound();
-        Plugin.RespawnPlayer(game, lobbyData.startingShelter);
+        Plugin.Respawn(game, lobbyData.startingShelter);
     }
 
     public override void GameShutDown(RainWorldGame game) {
         base.GameShutDown(game);
-        playerData.role = PlayerRole.None;
-        playerData.ready = false;
+        if (!lobby.isOwner)
+            return;
+        foreach (PlayerData data in OnlineManager.players.Select(x => lobbyData.GetPlayerData(x))) {
+            data.ready = false;
+            data.role = PlayerRole.None;
+        }
+        lobby.NewVersion();
     }
 }
