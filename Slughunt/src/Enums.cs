@@ -1,13 +1,12 @@
 ﻿namespace Slughunt;
 
 public static class Rules {
-    public enum HunterPick : byte { Random, RandomPrefer, RandomPreferThenRandom, AllPrefer, AllPreferThenRandom }
     public enum OnCatch : byte { Nothing, Death, SwitchSide }
     public enum OnRespawn : byte { Nothing, SwitchSide }
 }
 
+public enum PlayerRole : byte { None, PreferHunter, PreferHider, Hunter, Hider }
 public enum GameState : byte { Lobby, Setup, Hide, Hunt }
-public enum PlayerRole : byte { None, PreferHunter, Hunter, Hider }
 public enum CompassMode : byte { Off, Radar, Room, Position } // TODO: i dont like the name radar
 public enum TauntMode : byte { Off, Sound, Radar, Room, Position }
 

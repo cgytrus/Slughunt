@@ -1,9 +1,10 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Menu;
 using RainMeadow;
+using UnityEngine;
 
 namespace Slughunt;
 
@@ -191,14 +192,60 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void PrepareRound() {
-        // TODO: assign roles to players
         if (!lobby.isOwner)
             return;
         lobbyData.state = GameState.Setup;
         lobbyData.switchedStateAt = lobby.owner.tick;
         lobbyData.startingShelter = lobbyData.RandomShelter();
-        //lobbyData.startingShelter = "HI_S03";
+        AssignRoles();
         lobby.NewVersion();
+    }
+
+    private PlayerRole PickRole(PlayerRole role, int currentHunters) {
+        int maxHunters = lobby.clientSettings.Count - 1;
+        if (currentHunters >= maxHunters)
+            return PlayerRole.Hider;
+        if (currentHunters < 1)
+            return PlayerRole.Hunter;
+        if (role == PlayerRole.PreferHunter && !lobbyData.allowHunterPreference)
+            role = PlayerRole.None;
+        if (role == PlayerRole.PreferHider && !lobbyData.allowHiderPreference)
+            role = PlayerRole.None;
+        if (lobbyData.targetHunterCount == 0) {
+            return role == PlayerRole.PreferHunter ? PlayerRole.Hunter :
+                role == PlayerRole.PreferHider ? PlayerRole.Hider :
+                RXRandom.Bool() ? PlayerRole.Hunter : PlayerRole.Hider;
+        }
+        int targetHunters = Mathf.Clamp(lobbyData.targetHunterCount, 1, maxHunters);
+        return currentHunters < targetHunters ? PlayerRole.Hunter : PlayerRole.Hider;
+    }
+
+    private void AssignRoles() {
+        List<PlayerData> players = OnlineManager.players
+            .Select(x => lobbyData.GetPlayerData(x))
+            .OrderBy(_ => RXRandom.Int())
+            .ToList();
+        int hunterCount = 0;
+        foreach (PlayerData data in players.Where(x => x.role == PlayerRole.PreferHunter)) {
+            data.role = PickRole(data.role, hunterCount);
+            if (data.role == PlayerRole.Hunter)
+                hunterCount++;
+        }
+        foreach (PlayerData data in players.Where(x => x.role == PlayerRole.None)) {
+            data.role = PickRole(data.role, hunterCount);
+            if (data.role == PlayerRole.Hunter)
+                hunterCount++;
+        }
+        foreach (PlayerData data in players.Where(x => x.role == PlayerRole.PreferHider)) {
+            data.role = PickRole(data.role, hunterCount);
+            if (data.role == PlayerRole.Hunter)
+                hunterCount++;
+        }
+    }
+
+    public void AssignLateRole(PlayerData data) {
+        int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role == PlayerRole.Hunter);
+        data.role = PickRole(data.role, hunterCount);
     }
 
     private void GameTick(RainWorldGame game) {

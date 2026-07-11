@@ -21,8 +21,9 @@ public class LobbyData : OnlineResource.ResourceData {
     public HashSet<string> lockedGates { get; } = [];
 
     // pre gameplay settings
-    public int targetHunterCount { get; set; } = 1;
-    public Rules.HunterPick hunterPickRule { get; set; } = Rules.HunterPick.RandomPreferThenRandom;
+    public ushort targetHunterCount { get; set; } = 1;
+    public bool allowHunterPreference { get; set; } = true;
+    public bool allowHiderPreference { get; set; } = true;
 
     // gameplay settings
     public TimeSpan hideTime { get; set; } = TimeSpan.FromSeconds(6.0);
@@ -65,8 +66,9 @@ public class LobbyData : OnlineResource.ResourceData {
         [OnlineField] private DynamicUnorderedShortcuts _lockedShortcuts = new([]);
         [OnlineField] private DynamicUnorderedStrings _lockedGates = new([]);
 
-        [OnlineField] private int _targetHunterCount;
-        [OnlineField] private byte _hunterPickRule;
+        [OnlineField] private ushort _targetHunterCount;
+        [OnlineField] private bool _allowHunterPreference;
+        [OnlineField] private bool _allowHiderPreference;
 
         [OnlineField] private long _hideTime;
         [OnlineField] private byte _ruleset;
@@ -88,7 +90,8 @@ public class LobbyData : OnlineResource.ResourceData {
             _lockedShortcuts = new DynamicUnorderedShortcuts(data.lockedShortcuts);
             _lockedGates = new DynamicUnorderedStrings(data.lockedGates);
             _targetHunterCount = data.targetHunterCount;
-            _hunterPickRule = (byte)data.hunterPickRule;
+            _allowHunterPreference = data.allowHunterPreference;
+            _allowHiderPreference = data.allowHiderPreference;
             _hideTime = data.hideTime.Ticks;
             _ruleset = (byte)data.ruleset;
             _endless = data.endless;
@@ -109,7 +112,8 @@ public class LobbyData : OnlineResource.ResourceData {
             _lockedShortcuts.ReadTo(data.lockedShortcuts);
             _lockedGates.ReadTo(data.lockedGates);
             data.targetHunterCount = _targetHunterCount;
-            data.hunterPickRule = (Rules.HunterPick)_hunterPickRule;
+            data.allowHunterPreference = _allowHunterPreference;
+            data.allowHiderPreference = _allowHiderPreference;
             data.hideTime = TimeSpan.FromTicks(_hideTime);
             data.ruleset = (Ruleset)_ruleset;
             data.endless = _endless;

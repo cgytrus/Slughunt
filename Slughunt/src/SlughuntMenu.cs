@@ -110,6 +110,9 @@ public class SlughuntMenu : SmartMenu {
                     color = MenuColor(MenuColors.DarkRed);
                     color.lightness = data.ready ? 0.67f : 0.5f;
                     break;
+                case PlayerRole.PreferHider:
+                    color = new HSLColor(0.6f, 0.65f, data.ready ? 0.67f : 0.5f);
+                    break;
                 case PlayerRole.Hunter:
                     color = MenuColor(MenuColors.DarkRed);
                     color.lightness = 0.67f;
@@ -437,17 +440,25 @@ public class SlughuntMenu : SmartMenu {
         else
             OtherUpdate();
 
-        _hunterButton.menuLabel.text = Translate(playerData.role == PlayerRole.PreferHunter ? "nvm" : "WANT HUNTER");
+        _hunterButton.menuLabel.text = Translate(playerData.role switch {
+            PlayerRole.None => "PREFER: NEITHER",
+            PlayerRole.PreferHunter => "PREFER: HUNTER",
+            PlayerRole.PreferHider => "PREFER: HIDER",
+            _ => "what"
+        });
 
         if (lobbyData.state == GameState.Lobby) {
-            _hunterButton.inactive = false;
+            _hunterButton.inactive = lobbyData is { allowHunterPreference: false, allowHiderPreference: false };
 
+            _readyButton.inactive = false;
             _readyButton.menuLabel.text = Translate(playerData.ready ? "NOT READY" : "READY");
         }
         else {
             _hunterButton.inactive = true;
 
+            _readyButton.inactive = !lobbyData.endless;
             _readyButton.menuLabel.text = Translate("ENTER");
+            _readyButton.Description = lobbyData.endless ? "" : Translate("Wait for the current round to finish");
         }
     }
 
@@ -632,7 +643,9 @@ public class SlughuntMenu : SmartMenu {
     [RPCMethod]
     private static void SwitchReady(RPCEvent rpcEvent) {
         PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        data.ready = !data.ready;
+        data.ready = !data.ready && (lobbyData.endless || lobbyData.state == GameState.Lobby);
+        if (data.ready && lobbyData.state != GameState.Lobby)
+            gameMode.AssignLateRole(data);
         lobby.NewVersion();
     }
 
@@ -640,6 +653,10 @@ public class SlughuntMenu : SmartMenu {
     private static void SwitchSide(RPCEvent rpcEvent) {
         PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
         data.SwitchSide();
+        if (data.role == PlayerRole.PreferHunter && !lobbyData.allowHunterPreference)
+            data.SwitchSide();
+        if (data.role == PlayerRole.PreferHider && !lobbyData.allowHiderPreference)
+            data.SwitchSide();
         lobby.NewVersion();
     }
 }

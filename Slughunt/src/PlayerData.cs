@@ -18,6 +18,9 @@ public record PlayerData {
                 role = PlayerRole.PreferHunter;
                 break;
             case PlayerRole.PreferHunter:
+                role = PlayerRole.PreferHider;
+                break;
+            case PlayerRole.PreferHider:
                 role = PlayerRole.None;
                 break;
             case PlayerRole.Hunter:
