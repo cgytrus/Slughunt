@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Menu;
 using Menu.Remix;
 using Menu.Remix.MixedUI;
@@ -26,13 +27,25 @@ public class SlughuntMenu : SmartMenu {
     private readonly OpSimpleButton _startButton;
     private readonly OpHoldButton _forceStartButton;
 
+    private readonly PlayerCards _players;
+
+    private readonly OpUpdown _targetHunterCount;
+    private readonly SimplerCheckbox _allowHunterPreference;
+    private readonly SimplerCheckbox _allowHiderPreference;
+    private readonly OpUpdown _hideTime;
+    private readonly OpResourceSelector2 _rulesetPreset;
+    private readonly OpResourceSelector2 _rulesetHiderCatch;
+    private readonly OpResourceSelector2 _rulesetHiderRespawn;
+    private readonly OpResourceSelector2 _rulesetHunterCatch;
+    private readonly OpResourceSelector2 _rulesetHunterRespawn;
+    private readonly OpResourceSelector2 _hunterCompass;
+    private readonly OpResourceSelector2 _hiderCompass;
+    private readonly OpResourceSelector2 _taunts;
+
     private readonly SimplerCheckbox _spawnCreatures;
     private readonly OpComboBox2 _campaignSelector;
-
     private readonly WorldFilters _worldFilters;
     private readonly WorldFiltersLabel _worldFiltersLabel;
-
-    private readonly PlayerCards _players;
 
     public SlughuntMenu(ProcessManager manager) : base(manager, id) {
         backTarget = RainMeadow.RainMeadow.Ext_ProcessID.LobbySelectMenu;
@@ -93,8 +106,277 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(colorsButton);
 
+        const float labelsWidth = 150f;
+
+        AlignedMenuLabel targetHunterCountLabel = new(
+            this, mainPage,
+            "Target hunter count",
+            colorsButton.pos - new Vector2(0f, colorsButton.size.y + 20f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(targetHunterCountLabel);
+        _targetHunterCount = new OpUpdown(
+            new Configurable<int>(lobbyData.targetHunterCount, accept: new ConfigAcceptableRange<int>(0, ushort.MaxValue)),
+            targetHunterCountLabel.pos + new Vector2(labelsWidth + 5f, 0f), 80f
+        );
+        _targetHunterCount._lastArrX = _targetHunterCount._arrX;
+        _targetHunterCount.OnValueChanged += (_, _, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.targetHunterCount = (ushort)_targetHunterCount.valueInt;
+            lobby.NewVersion();
+        };
+        _ = new UIelementWrapper(tabWrapper, _targetHunterCount);
+
+        _allowHunterPreference = new SimplerCheckbox(
+            this, mainPage,
+            targetHunterCountLabel.pos - new Vector2(0f, targetHunterCountLabel.size.y + 10f),
+            42f, "Allow hunter preference", true
+        );
+        _allowHunterPreference.OnClick += value => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.allowHunterPreference = value;
+            lobby.NewVersion();
+        };
+        mainPage.subObjects.Add(_allowHunterPreference);
+        _allowHunterPreference.Checked = lobbyData.allowHunterPreference;
+
+        _allowHiderPreference = new SimplerCheckbox(
+            this, mainPage,
+            _allowHunterPreference.pos - new Vector2(0f, _allowHunterPreference.size.y + 10f),
+            42f, "Allow hider preference", true
+        );
+        _allowHiderPreference.OnClick += value => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.allowHiderPreference = value;
+            lobby.NewVersion();
+        };
+        mainPage.subObjects.Add(_allowHiderPreference);
+        _allowHiderPreference.Checked = lobbyData.allowHiderPreference;
+
+        AlignedMenuLabel hideTimeLabel = new(
+            this, mainPage,
+            "Hide time (seconds)",
+            _allowHiderPreference.pos - new Vector2(0f, _allowHiderPreference.size.y + 20f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(hideTimeLabel);
+        _hideTime = new OpUpdown(
+            new Configurable<int>((int)lobbyData.hideTime.TotalSeconds, accept: new ConfigAcceptableRange<int>(0, int.MaxValue)),
+            hideTimeLabel.pos + new Vector2(labelsWidth + 5f, 0f), 80f
+        );
+        _hideTime._lastArrX = _hideTime._arrX;
+        _hideTime.OnValueChanged += (_, _, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.hideTime = TimeSpan.FromSeconds(_hideTime.valueInt);
+            lobby.NewVersion();
+        };
+        _ = new UIelementWrapper(tabWrapper, _hideTime);
+
+        AlignedMenuLabel rulesetPresetLabel = new(
+            this, mainPage,
+            "Ruleset",
+            hideTimeLabel.pos - new Vector2(0f, hideTimeLabel.size.y + 10f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(rulesetPresetLabel);
+        _rulesetPreset = new OpResourceSelector2(
+            new Configurable<Ruleset.PresetName>(lobbyData.ruleset.GetPresetName()),
+            rulesetPresetLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            200f
+        );
+        _rulesetPreset.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.ruleset = Ruleset.GetPreset(
+                ValueConverter.ConvertToValue<Ruleset.PresetName>(value),
+                lobbyData.ruleset
+            );
+            lobby.NewVersion();
+            _rulesetHiderCatch!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderCatch);
+            _rulesetHiderRespawn!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
+            _rulesetHunterCatch!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
+            _rulesetHunterRespawn!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
+        };
+        _ = new UIelementWrapper(tabWrapper, _rulesetPreset);
+
+        AlignedMenuLabel rulesetHiderLabel = new(
+            this, mainPage,
+            "Hider (catch/respawn)",
+            rulesetPresetLabel.pos - new Vector2(-10f, rulesetPresetLabel.size.y + 10f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(rulesetHiderLabel);
+        _rulesetHiderCatch = new OpResourceSelector2(
+            new Configurable<Rules.OnCatch>(lobbyData.ruleset.hiderCatch),
+            _rulesetPreset.pos - new Vector2(0f, _rulesetPreset.size.y + 10f),
+            _rulesetPreset.size.x * 0.5f - 5f
+        );
+        _rulesetHiderCatch.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.ruleset = lobbyData.ruleset with {
+                hiderCatch = ValueConverter.ConvertToValue<Rules.OnCatch>(value)
+            };
+            lobby.NewVersion();
+            _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
+        };
+        _ = new UIelementWrapper(tabWrapper, _rulesetHiderCatch);
+
+        _rulesetHiderRespawn = new OpResourceSelector2(
+            new Configurable<Rules.OnRespawn>(lobbyData.ruleset.hiderRespawn),
+            _rulesetHiderCatch.pos + new Vector2(_rulesetHiderCatch.size.x + 10f, 0f),
+            _rulesetHiderCatch.size.x
+        );
+        _rulesetHiderRespawn.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.ruleset = lobbyData.ruleset with {
+                hiderRespawn = ValueConverter.ConvertToValue<Rules.OnRespawn>(value)
+            };
+            lobby.NewVersion();
+            _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
+        };
+        _ = new UIelementWrapper(tabWrapper, _rulesetHiderRespawn);
+
+        AlignedMenuLabel rulesetHunterLabel = new(
+            this, mainPage,
+            "Hunter (catch/respawn)",
+            rulesetHiderLabel.pos - new Vector2(0f, rulesetHiderLabel.size.y + 10f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(rulesetHunterLabel);
+        _rulesetHunterCatch = new OpResourceSelector2(
+            new Configurable<Rules.OnCatch>(lobbyData.ruleset.hunterCatch),
+            _rulesetHiderCatch.pos - new Vector2(0f, _rulesetHiderCatch.size.y + 10f),
+            _rulesetHiderRespawn.size.x
+        );
+        _rulesetHunterCatch.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.ruleset = lobbyData.ruleset with {
+                hunterCatch = ValueConverter.ConvertToValue<Rules.OnCatch>(value)
+            };
+            lobby.NewVersion();
+            _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
+        };
+        _ = new UIelementWrapper(tabWrapper, _rulesetHunterCatch);
+
+        _rulesetHunterRespawn = new OpResourceSelector2(
+            new Configurable<Rules.OnRespawn>(lobbyData.ruleset.hunterRespawn),
+            _rulesetHunterCatch.pos + new Vector2(_rulesetHunterCatch.size.x + 10f, 0f),
+            _rulesetHunterCatch.size.x
+        );
+        _rulesetHunterRespawn.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.ruleset = lobbyData.ruleset with {
+                hunterRespawn = ValueConverter.ConvertToValue<Rules.OnRespawn>(value)
+            };
+            lobby.NewVersion();
+            _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
+        };
+        _ = new UIelementWrapper(tabWrapper, _rulesetHunterRespawn);
+
+        AlignedMenuLabel hunterCompassLabel = new(
+            this, mainPage,
+            "Hunter compass",
+            rulesetHunterLabel.pos - new Vector2(10f, rulesetHunterLabel.size.y + 20f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(hunterCompassLabel);
+        _hunterCompass = new OpResourceSelector2(
+            new Configurable<CompassMode>(lobbyData.hunterCompass),
+            hunterCompassLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            200f
+        );
+        _hunterCompass.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.hunterCompass = ValueConverter.ConvertToValue<CompassMode>(value);
+            lobby.NewVersion();
+        };
+        _ = new UIelementWrapper(tabWrapper, _hunterCompass);
+
+        AlignedMenuLabel hiderCompassLabel = new(
+            this, mainPage,
+            "Hider compass",
+            hunterCompassLabel.pos - new Vector2(0f, hunterCompassLabel.size.y + 10f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(hiderCompassLabel);
+        _hiderCompass = new OpResourceSelector2(
+            new Configurable<CompassMode>(lobbyData.hiderCompass),
+            hiderCompassLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            200f
+        );
+        _hiderCompass.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.hiderCompass = ValueConverter.ConvertToValue<CompassMode>(value);
+            lobby.NewVersion();
+        };
+        _ = new UIelementWrapper(tabWrapper, _hiderCompass);
+
+        AlignedMenuLabel tauntsLabel = new(
+            this, mainPage,
+            "Taunts",
+            hiderCompassLabel.pos - new Vector2(0f, hiderCompassLabel.size.y + 10f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(tauntsLabel);
+        _taunts = new OpResourceSelector2(
+            new Configurable<TauntMode>(lobbyData.taunts),
+            tauntsLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            200f
+        );
+        _taunts.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.taunts = ValueConverter.ConvertToValue<TauntMode>(value);
+            lobby.NewVersion();
+        };
+        _ = new UIelementWrapper(tabWrapper, _taunts);
+
         _spawnCreatures = new SimplerCheckbox(
-            this, mainPage, colorsButton.pos - new Vector2(0f, 40f), 42f, "Spawn creatures", true
+            this, mainPage,
+            new Vector2(_taunts.pos.x + _taunts.size.x + 20f, colorsButton.pos.y),
+            42f, "Spawn creatures", true
         );
         _spawnCreatures.OnClick += value => {
             if (!lobby.isOwner)
@@ -143,7 +425,7 @@ public class SlughuntMenu : SmartMenu {
         _worldFiltersLabel = new WorldFiltersLabel(
             this, mainPage,
             new Vector2(
-                _worldFilters.pos.x + _worldFilters.size.x + 50f,
+                _worldFilters.pos.x + _worldFilters.size.x + 20f,
                 colorsButton.pos.y + colorsButton.size.y
             )
         );
@@ -209,6 +491,19 @@ public class SlughuntMenu : SmartMenu {
         _startButton.greyedOut = !playerData.ready || OnlineManager.players.Count < 2;
         _forceStartButton.greyedOut = _startButton.greyedOut;
 
+        _targetHunterCount.greyedOut = false;
+        _allowHunterPreference.inactive = false;
+        _allowHiderPreference.inactive = false;
+        _hideTime.greyedOut = false;
+        _rulesetPreset.greyedOut = false;
+        _rulesetHiderCatch.greyedOut = false;
+        _rulesetHiderRespawn.greyedOut = false;
+        _rulesetHunterCatch.greyedOut = false;
+        _rulesetHunterRespawn.greyedOut = false;
+        _hunterCompass.greyedOut = false;
+        _hiderCompass.greyedOut = false;
+        _taunts.greyedOut = false;
+
         _spawnCreatures.inactive = false;
         _campaignSelector.greyedOut = false;
 
@@ -220,10 +515,36 @@ public class SlughuntMenu : SmartMenu {
         _forceStartButton.Hide();
         _worldFilters.Hide();
 
-        _spawnCreatures.inactive = true;
-        _spawnCreatures.Checked = lobbyData.spawnCreatures;
+        _targetHunterCount.greyedOut = true;
+        _allowHunterPreference.inactive = true;
+        _allowHiderPreference.inactive = true;
+        _hideTime.greyedOut = true;
+        _rulesetPreset.greyedOut = true;
+        _rulesetHiderCatch.greyedOut = true;
+        _rulesetHiderRespawn.greyedOut = true;
+        _rulesetHunterCatch.greyedOut = true;
+        _rulesetHunterRespawn.greyedOut = true;
+        _hunterCompass.greyedOut = true;
+        _hiderCompass.greyedOut = true;
+        _taunts.greyedOut = true;
 
+        _spawnCreatures.inactive = true;
         _campaignSelector.greyedOut = true;
+
+        _targetHunterCount.valueInt = lobbyData.targetHunterCount;
+        _allowHunterPreference.Checked = lobbyData.allowHunterPreference;
+        _allowHiderPreference.Checked = lobbyData.allowHiderPreference;
+        _hideTime.valueInt = (int)lobbyData.hideTime.TotalSeconds;
+        _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
+        _rulesetHiderCatch.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderCatch);
+        _rulesetHiderRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
+        _rulesetHunterCatch.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
+        _rulesetHunterRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
+        _hunterCompass.value = ValueConverter.ConvertToString(lobbyData.hunterCompass);
+        _hiderCompass.value = ValueConverter.ConvertToString(lobbyData.hiderCompass);
+        _taunts.value = ValueConverter.ConvertToString(lobbyData.taunts);
+
+        _spawnCreatures.Checked = lobbyData.spawnCreatures;
         _campaignSelector.value = lobbyData.campaign.value;
 
         // if we are the owner this is updated by our own ui interactions

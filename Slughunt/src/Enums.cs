@@ -1,14 +1,16 @@
-﻿namespace Slughunt;
+﻿using System.ComponentModel;
+
+namespace Slughunt;
 
 public static class Rules {
-    public enum OnCatch : byte { Nothing, Death, SwitchSide }
-    public enum OnRespawn : byte { Nothing, SwitchSide }
+    public enum OnCatch { Nothing, Death, SwitchSide }
+    public enum OnRespawn { Nothing, SwitchSide }
 }
 
 public enum PlayerRole : byte { None, PreferHunter, PreferHider, Hunter, Hider }
 public enum GameState : byte { Lobby, Setup, Hide, Hunt }
-public enum CompassMode : byte { Off, Radar, Room, Position } // TODO: i dont like the name radar
-public enum TauntMode : byte { Off, Sound, Radar, Room, Position }
+public enum CompassMode { Off, Radar, Room, Position } // TODO: i dont like the name radar
+public enum TauntMode { Off, Sound, Radar, Room, Position }
 
 public readonly record struct Ruleset(
     Rules.OnCatch hiderCatch, Rules.OnRespawn hiderRespawn,
@@ -41,7 +43,14 @@ public readonly record struct Ruleset(
         _ => Rules.OnRespawn.Nothing
     };
 
-    public enum PresetName { Custom, Manhunt, Infection1, Infection2, Tag1, Tag2 }
+    public enum PresetName {
+        [Description("Custom")] Custom,
+        [Description("Manhunt")] Manhunt,
+        [Description("Infection (Variant 1)")] Infection1,
+        [Description("Infection (Variant 2)")] Infection2,
+        [Description("Tag (Variant 1)")] Tag1,
+        [Description("Tag (Variant 2)")] Tag2
+    }
 
     public PresetName GetPresetName() =>
         this == manhunt ? PresetName.Manhunt :
@@ -51,16 +60,14 @@ public readonly record struct Ruleset(
         this == tag2 ? PresetName.Tag2 :
         PresetName.Custom;
 
-    public string GetPresetNameAsString() => PresetNameToString(GetPresetName());
-
-    public static string PresetNameToString(PresetName presetName) => presetName switch {
-        PresetName.Custom => "Custom",
-        PresetName.Manhunt => "Manhunt",
-        PresetName.Infection1 => "Infection (Variant 1)",
-        PresetName.Infection2 => "Infection (Variant 2)",
-        PresetName.Tag1 => "Tag (Variant 1)",
-        PresetName.Tag2 => "Tag (Variant 2)",
-        _ => "what"
+    public static Ruleset GetPreset(PresetName preset, Ruleset custom) => preset switch {
+        PresetName.Custom => custom,
+        PresetName.Manhunt => manhunt,
+        PresetName.Infection1 => infection1,
+        PresetName.Infection2 => infection2,
+        PresetName.Tag1 => tag1,
+        PresetName.Tag2 => tag2,
+        _ => default(Ruleset)
     };
 
     public static explicit operator byte(Ruleset x) => (byte)(

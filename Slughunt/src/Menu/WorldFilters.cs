@@ -152,7 +152,7 @@ public class WorldFilters : RectangularMenuObject {
 
         OpComboBox2 AddFilterComboBox(UIelement? after, int index = 0, int count = 1) {
             Vector2 afterPos = after?.pos ?? new Vector2();
-            Vector2 afterSize = after?.size ?? new Vector2(200f, padding);
+            Vector2 afterSize = after?.size ?? new Vector2(200f, -padding);
             OpComboBox2 comboBox = new(
                 new Configurable<string?>(null),
                 afterPos + new Vector2(afterSize.x * index / count + padding * 0.5f * index, -afterSize.y - padding),
