@@ -275,14 +275,10 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         foreach (ClientSettings settings in lobby.clientSettings.Values) {
             if (!settings.TryGetData(out PlayerData data))
                 continue;
-            anyHunters = anyHunters || data.role == PlayerRole.Hunter && settings.avatars
-                .Any(x => x.FindEntity(true) is OnlineCreature {
-                    abstractCreature.state.alive: true
-                });
-            anyHiders = anyHiders || data.role == PlayerRole.Hider && settings.avatars
-                .Any(x => x.FindEntity(true) is OnlineCreature {
-                    abstractCreature.state.alive: true
-                });
+            anyHunters = anyHunters || data.role == PlayerRole.Hunter && (lobbyData.endless || settings.avatars
+                .Any(x => x.FindEntity(true) is OnlineCreature { abstractCreature.state.alive: true }));
+            anyHiders = anyHiders || data.role == PlayerRole.Hider && (lobbyData.endless || settings.avatars
+                .Any(x => x.FindEntity(true) is OnlineCreature { abstractCreature.state.alive: true }));
             if (anyHiders && anyHunters)
                 break;
         }
