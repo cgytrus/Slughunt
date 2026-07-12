@@ -5,7 +5,12 @@ namespace Slughunt.Serialization;
 
 public class DynamicPlayerData : DynamicDictionary<OnlinePlayer, PlayerData, DynamicPlayerData> {
     public DynamicPlayerData() { }
-    public DynamicPlayerData(Dictionary<OnlinePlayer, PlayerData> list) : base(list) { }
+
+    public DynamicPlayerData(Dictionary<OnlinePlayer, PlayerData> list) {
+        added = [];
+        foreach (KeyValuePair<OnlinePlayer, PlayerData> x in list)
+            added.Add(x.Key, x.Value with { });
+    }
 
     public override void CustomSerialize(Serializer serializer) {
         Serialize(serializer, ref added);
@@ -40,12 +45,13 @@ public class DynamicPlayerData : DynamicDictionary<OnlinePlayer, PlayerData, Dyn
         data = [];
         for (int i = 0; i < count; ++i) {
             ushort id = serializer.reader.ReadUInt16();
+            PlayerData value = PlayerData.Read(serializer.reader);
             OnlinePlayer? player = OnlineManager.lobby?.PlayerFromId(id);
             if (player is null) {
                 Plugin.logger.LogError($"player not found {id}");
                 continue;
             }
-            data.Add(player, PlayerData.Read(serializer.reader));
+            data.Add(player, value);
         }
     }
 }

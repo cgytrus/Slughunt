@@ -218,7 +218,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel rulesetHiderLabel = new(
             this, mainPage,
             "Hider (catch/respawn)",
-            rulesetPresetLabel.pos - new Vector2(-10f, rulesetPresetLabel.size.y + 10f),
+            rulesetPresetLabel.pos - new Vector2(-10f, rulesetPresetLabel.size.y + 5f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -228,8 +228,8 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(rulesetHiderLabel);
         _rulesetHiderCatch = new OpResourceSelector2(
             new Configurable<Rules.OnCatch>(lobbyData.ruleset.hiderCatch),
-            _rulesetPreset.pos - new Vector2(0f, _rulesetPreset.size.y + 10f),
-            _rulesetPreset.size.x * 0.5f - 5f
+            _rulesetPreset.pos - new Vector2(0f, _rulesetPreset.size.y + 5f),
+            _rulesetPreset.size.x * 0.5f - 2.5f
         );
         _rulesetHiderCatch.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
@@ -244,7 +244,7 @@ public class SlughuntMenu : SmartMenu {
 
         _rulesetHiderRespawn = new OpResourceSelector2(
             new Configurable<Rules.OnRespawn>(lobbyData.ruleset.hiderRespawn),
-            _rulesetHiderCatch.pos + new Vector2(_rulesetHiderCatch.size.x + 10f, 0f),
+            _rulesetHiderCatch.pos + new Vector2(_rulesetHiderCatch.size.x + 5f, 0f),
             _rulesetHiderCatch.size.x
         );
         _rulesetHiderRespawn.OnValueChanged += (_, value, _) => {
@@ -261,7 +261,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel rulesetHunterLabel = new(
             this, mainPage,
             "Hunter (catch/respawn)",
-            rulesetHiderLabel.pos - new Vector2(0f, rulesetHiderLabel.size.y + 10f),
+            rulesetHiderLabel.pos - new Vector2(0f, rulesetHiderLabel.size.y + 5f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -271,7 +271,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(rulesetHunterLabel);
         _rulesetHunterCatch = new OpResourceSelector2(
             new Configurable<Rules.OnCatch>(lobbyData.ruleset.hunterCatch),
-            _rulesetHiderCatch.pos - new Vector2(0f, _rulesetHiderCatch.size.y + 10f),
+            _rulesetHiderCatch.pos - new Vector2(0f, _rulesetHiderCatch.size.y + 5f),
             _rulesetHiderRespawn.size.x
         );
         _rulesetHunterCatch.OnValueChanged += (_, value, _) => {
@@ -287,7 +287,7 @@ public class SlughuntMenu : SmartMenu {
 
         _rulesetHunterRespawn = new OpResourceSelector2(
             new Configurable<Rules.OnRespawn>(lobbyData.ruleset.hunterRespawn),
-            _rulesetHunterCatch.pos + new Vector2(_rulesetHunterCatch.size.x + 10f, 0f),
+            _rulesetHunterCatch.pos + new Vector2(_rulesetHunterCatch.size.x + 5f, 0f),
             _rulesetHunterCatch.size.x
         );
         _rulesetHunterRespawn.OnValueChanged += (_, value, _) => {

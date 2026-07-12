@@ -11,14 +11,6 @@ public abstract class DynamicDictionary<TKey, TValue, TImp> : IDelta<TImp>, Seri
     protected Dictionary<TKey, TValue>? added;
     protected Dictionary<TKey, TValue>? removed;
 
-    protected DynamicDictionary() { }
-
-    protected DynamicDictionary(Dictionary<TKey, TValue> list) {
-        added = [];
-        foreach (KeyValuePair<TKey, TValue> x in list)
-            added.Add(x.Key, x.Value);
-    }
-
     private static readonly TImp nullDelta = new();
 
     public TImp Delta(TImp? old) {
@@ -37,7 +29,7 @@ public abstract class DynamicDictionary<TKey, TValue, TImp> : IDelta<TImp>, Seri
                     deltaAdded.Add(x.Key, x.Value);
             }
             foreach (KeyValuePair<TKey, TValue> x in old.added!) {
-                if (!added.ContainsKey(x.Key) || !added[x.Key].Equals(x.Value))
+                if (!added.ContainsKey(x.Key))
                     deltaRemoved.Add(x.Key, x.Value);
             }
         }
@@ -56,13 +48,13 @@ public abstract class DynamicDictionary<TKey, TValue, TImp> : IDelta<TImp>, Seri
     }
 
     public void ReadTo(Dictionary<TKey, TValue> current) {
-        if (removed is not null) {
-            foreach (TKey x in removed.Keys)
-                current.Remove(x);
-        }
         if (added is not null) {
             foreach (KeyValuePair<TKey, TValue> x in added)
                 current[x.Key] = x.Value;
+        }
+        if (removed is not null) {
+            foreach (TKey x in removed.Keys)
+                current.Remove(x);
         }
     }
 

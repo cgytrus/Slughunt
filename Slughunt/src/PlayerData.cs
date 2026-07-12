@@ -3,7 +3,7 @@ using RainMeadow;
 
 namespace Slughunt;
 
-public record PlayerData {
+public sealed record PlayerData {
     public bool ready { get; set; }
     public PlayerRole role { get; set; }
     public uint switchedRolesAt { get; private set; }
@@ -36,28 +36,6 @@ public record PlayerData {
                 break;
         }
         switchedRolesAt = OnlineManager.mePlayer.tick;
-    }
-
-    public uint roleCaught {
-        get => role switch {
-            PlayerRole.Hunter => caughtAsHunter,
-            PlayerRole.Hider => caughtAsHider,
-            _ => 0
-        };
-        set {
-            switch (role) {
-                case PlayerRole.Hunter:
-                    caughtAsHunter = value;
-                    break;
-                case PlayerRole.Hider:
-                    caughtAsHider = value;
-                    break;
-                case PlayerRole.None:
-                case PlayerRole.PreferHunter:
-                default:
-                    break;
-            }
-        }
     }
 
     public void Write(BinaryWriter writer) {
