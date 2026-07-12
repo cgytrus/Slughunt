@@ -265,6 +265,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void SetupTick(RainWorldGame game) {
+        // TODO: this is still counting hunter/hider time
         StunOrManageShortcut(game, false);
         if (!lobby.isOwner)
             return;

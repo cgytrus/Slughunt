@@ -351,10 +351,8 @@ public partial class Plugin : BaseUnityPlugin {
         PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
         if (hunterData.role != PlayerRole.Hunter || hiderData.role != PlayerRole.Hider)
             return;
-        if (!CanCatch(0, hunterData.dead, hiderData.dead, gameMode))
-            return;
-        // became hunter less than hide time ago, cant catch
-        if (hunter.tick - hunterData.changedStateAt < (long)gameMode.lobbyData.hideTimeFrames)
+        int stun = (int)((long)gameMode.lobbyData.hideTimeFrames - hunterData.currentStateFor);
+        if (!CanCatch(stun, hunterData.dead, hiderData.dead, gameMode))
             return;
 
         hunterData.caughtAsHunter++;

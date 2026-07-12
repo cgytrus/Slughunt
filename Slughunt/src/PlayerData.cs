@@ -39,6 +39,8 @@ public sealed record PlayerData {
         }
     }
 
+    public uint currentStateFor => OnlineManager.lobby.owner.tick - changedStateAt;
+
     public uint timeAsHunter { get; private set; }
     public uint timeAsHider { get; private set; }
     public uint caughtAsHunter { get; set; }
