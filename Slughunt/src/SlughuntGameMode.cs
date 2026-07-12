@@ -107,10 +107,9 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     public void StartGame() {
-        // TODO: count ready players
         if (!playerData.ready ||
             !lobby.isOwner && lobbyData.state == GameState.Lobby ||
-            OnlineManager.players.Count < 2)
+            OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2)
             return;
         ProcessManager manager = OnlineManager.instance.manager;
         if (ModManager.CoopAvailable)
@@ -333,7 +332,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void EndRound(RainWorldGame game) {
-        if (!lobbyData.endless) {
+        if (!lobbyData.endless || OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2) {
             OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
             return;
         }

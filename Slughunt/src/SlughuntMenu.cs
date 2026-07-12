@@ -503,7 +503,8 @@ public class SlughuntMenu : SmartMenu {
             _startButton.Hide();
             _forceStartButton.Show();
         }
-        _startButton.greyedOut = !playerData.ready || OnlineManager.players.Count < 2;
+        int readyPlayers = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready);
+        _startButton.greyedOut = !playerData.ready || readyPlayers < 2;
         _forceStartButton.greyedOut = _startButton.greyedOut;
 
         _targetHunterCount.greyedOut = false;
