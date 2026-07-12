@@ -299,9 +299,7 @@ public partial class Plugin : BaseUnityPlugin {
         if (hiderObj is not Player hider)
             return;
 
-        if (hunter.stun > 0)
-            return;
-        if (hunter.dead || hider.dead)
+        if (!CanCatch(hunter.stun, hunter.dead, hider.dead, gameMode))
             return;
 
         RainWorldGame game = hunter.room.game;
@@ -353,8 +351,10 @@ public partial class Plugin : BaseUnityPlugin {
         PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
         if (hunterData.role != PlayerRole.Hunter || hiderData.role != PlayerRole.Hider)
             return;
+        if (!CanCatch(0, hunterData.dead, hiderData.dead, gameMode))
+            return;
         // became hunter less than hide time ago, cant catch
-        if (hunter.tick - hunterData.switchedRolesAt < (long)gameMode.lobbyData.hideTimeFrames)
+        if (hunter.tick - hunterData.changedStateAt < (long)gameMode.lobbyData.hideTimeFrames)
             return;
 
         hunterData.caughtAsHunter++;
@@ -375,6 +375,7 @@ public partial class Plugin : BaseUnityPlugin {
                 break;
             case Rules.OnCatch.Death:
                 die = true;
+                data.dead = true;
                 break;
             case Rules.OnCatch.SwitchSide:
                 data.SwitchSide();
@@ -403,6 +404,10 @@ public partial class Plugin : BaseUnityPlugin {
         // TODO: maybe play the sound for everyone in the room?
         player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
     }
+
+    private static bool CanCatch(int hunterStun, bool hunterDead, bool hiderDead, SlughuntGameMode gameMode) =>
+        hunterStun <= 0 && !hunterDead &&
+        (!hiderDead || gameMode.lobbyData.ruleset.hiderCatch != Rules.OnCatch.Death);
 
     private static void RespawnRule() {
         On.Player.Die += (orig, self) => {
@@ -441,7 +446,7 @@ public partial class Plugin : BaseUnityPlugin {
     private static void HostOnDeath(RPCEvent rpcEvent) {
         if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
             return;
-        gameMode.lobbyData.GetPlayerData(rpcEvent.from).Die();
+        gameMode.lobbyData.GetPlayerData(rpcEvent.from).dead = true;
         gameMode.lobby.NewVersion();
     }
 
@@ -514,16 +519,15 @@ public partial class Plugin : BaseUnityPlugin {
         if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
             return;
         PlayerData playerData = gameMode.lobbyData.GetPlayerData(rpcEvent.from);
+        playerData.dead = false;
         Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(playerData.role);
         switch (rule) {
             case Rules.OnRespawn.Nothing:
-                playerData.role = playerData.role; // reset death flag
                 break;
             case Rules.OnRespawn.SwitchSide:
                 playerData.SwitchSide();
                 break;
             default:
-                playerData.role = playerData.role; // reset death flag
                 logger.LogError($"unknown rule? {rule}");
                 break;
         }

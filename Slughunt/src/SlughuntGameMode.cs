@@ -109,6 +109,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     public void StartGame() {
+        // TODO: count ready players
         if (!playerData.ready ||
             !lobby.isOwner && lobbyData.state == GameState.Lobby ||
             OnlineManager.players.Count < 2)
@@ -350,6 +351,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         foreach (PlayerData data in OnlineManager.players.Select(x => lobbyData.GetPlayerData(x))) {
             data.ready = false;
             data.role = PlayerRole.None;
+            data.dead = false;
         }
         lobby.NewVersion();
     }

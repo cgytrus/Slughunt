@@ -61,16 +61,18 @@ public class SlughuntInfo : HudPart {
             _scoreLabel.isVisible = false;
             return;
         }
+        _scoreLabel.isVisible = true;
 
-        uint lastAliveTick = playerData.dead ? playerData.diedAt : lobby.owner.tick;
-        TimeSpan roleTime = TimeSpan.FromSeconds((lastAliveTick - playerData.switchedRolesAt) / fps);
+        if (playerData.dead)
+            return;
+
+        TimeSpan roleTime = TimeSpan.FromSeconds((lobby.owner.tick - playerData.changedStateAt) / fps);
         TimeSpan totalTime = TimeSpan.FromSeconds(playerData.totalTime / fps) + (hunter ? -roleTime : roleTime);
 
         _scoreLabel.text = $"""
-        {(hunter ? "Hunting" : "Hiding")} for {SpeedRunTimer.TimeFormat(roleTime)}
-        Total: {playerData.totalScore} / {SpeedRunTimer.TimeFormat(totalTime)}
-        """;
-        _scoreLabel.isVisible = true;
+            {(hunter ? "Hunting" : "Hiding")} for {SpeedRunTimer.TimeFormat(roleTime)}
+            Total: {playerData.totalScore} / {SpeedRunTimer.TimeFormat(totalTime)}
+            """;
     }
 
     public override void ClearSprites() {

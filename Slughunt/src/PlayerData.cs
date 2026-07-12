@@ -9,22 +9,35 @@ public sealed record PlayerData {
     public PlayerRole role {
         get;
         set {
-            if (field == value && !dead)
+            if (field == value)
                 return;
-            uint tick = dead ? diedAt : OnlineManager.lobby.owner.tick;
-            dead = false; // cant switch roles without respawning
-            if (field == PlayerRole.Hunter)
-                timeAsHunter += tick - switchedRolesAt;
-            else if (field == PlayerRole.Hider)
-                timeAsHider += tick - switchedRolesAt;
+            changedStateAt = OnlineManager.lobby.owner.tick;
             field = value;
-            switchedRolesAt = OnlineManager.lobby.owner.tick;
         }
     }
-    public uint switchedRolesAt { get; private set; }
 
-    public bool dead { get; private set; }
-    public uint diedAt { get; private set; }
+    public bool dead {
+        get;
+        set {
+            if (field == value)
+                return;
+            changedStateAt = OnlineManager.lobby.owner.tick;
+            field = value;
+        }
+    }
+
+    public uint changedStateAt {
+        get;
+        private set {
+            if (!dead) {
+                if (role == PlayerRole.Hunter)
+                    timeAsHunter += value - field;
+                else if (role == PlayerRole.Hider)
+                    timeAsHider += value - field;
+            }
+            field = value;
+        }
+    }
 
     public uint timeAsHunter { get; private set; }
     public uint timeAsHider { get; private set; }
@@ -57,17 +70,11 @@ public sealed record PlayerData {
         }
     }
 
-    public void Die() {
-        dead = true;
-        diedAt = OnlineManager.lobby.owner.tick;
-    }
-
     public void Write(BinaryWriter writer) {
         writer.Write(ready);
         writer.Write((byte)role);
-        writer.Write(switchedRolesAt);
         writer.Write(dead);
-        writer.Write(diedAt);
+        writer.Write(changedStateAt);
         writer.Write(timeAsHunter);
         writer.Write(timeAsHider);
         writer.Write(caughtAsHunter);
@@ -77,9 +84,8 @@ public sealed record PlayerData {
     public static PlayerData Read(BinaryReader reader) => new() {
         ready = reader.ReadBoolean(),
         role = (PlayerRole)reader.ReadByte(),
-        switchedRolesAt = reader.ReadUInt32(),
         dead = reader.ReadBoolean(),
-        diedAt = reader.ReadUInt32(),
+        changedStateAt = reader.ReadUInt32(),
         timeAsHunter = reader.ReadUInt32(),
         timeAsHider = reader.ReadUInt32(),
         caughtAsHunter = reader.ReadUInt32(),
