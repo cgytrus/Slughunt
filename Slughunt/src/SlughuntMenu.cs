@@ -38,6 +38,7 @@ public class SlughuntMenu : SmartMenu {
     private readonly OpResourceSelector2 _rulesetHiderRespawn;
     private readonly OpResourceSelector2 _rulesetHunterCatch;
     private readonly OpResourceSelector2 _rulesetHunterRespawn;
+    private readonly SimplerCheckbox _endless;
     private readonly OpResourceSelector2 _hunterCompass;
     private readonly OpResourceSelector2 _hiderCompass;
     private readonly OpResourceSelector2 _taunts;
@@ -301,10 +302,24 @@ public class SlughuntMenu : SmartMenu {
         };
         _ = new UIelementWrapper(tabWrapper, _rulesetHunterRespawn);
 
+        _endless = new SimplerCheckbox(
+            this, mainPage,
+            rulesetHunterLabel.pos - new Vector2(10f, 24f + 5f),
+            42f, "Endless", true
+        );
+        _endless.OnClick += value => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.endless = value;
+            lobby.NewVersion();
+        };
+        mainPage.subObjects.Add(_endless);
+        _endless.Checked = lobbyData.endless;
+
         AlignedMenuLabel hunterCompassLabel = new(
             this, mainPage,
             "Hunter compass",
-            rulesetHunterLabel.pos - new Vector2(10f, 24f + 10f),
+            _endless.pos - new Vector2(0f, 24f + 10f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -500,6 +515,7 @@ public class SlughuntMenu : SmartMenu {
         _rulesetHiderRespawn.greyedOut = false;
         _rulesetHunterCatch.greyedOut = false;
         _rulesetHunterRespawn.greyedOut = false;
+        _endless.inactive = false;
         _hunterCompass.greyedOut = false;
         _hiderCompass.greyedOut = false;
         _taunts.greyedOut = false;
@@ -524,6 +540,7 @@ public class SlughuntMenu : SmartMenu {
         _rulesetHiderRespawn.greyedOut = true;
         _rulesetHunterCatch.greyedOut = true;
         _rulesetHunterRespawn.greyedOut = true;
+        _endless.inactive = true;
         _hunterCompass.greyedOut = true;
         _hiderCompass.greyedOut = true;
         _taunts.greyedOut = true;
@@ -540,6 +557,7 @@ public class SlughuntMenu : SmartMenu {
         _rulesetHiderRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
         _rulesetHunterCatch.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
         _rulesetHunterRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
+        _endless.Checked = lobbyData.endless;
         _hunterCompass.value = ValueConverter.ConvertToString(lobbyData.hunterCompass);
         _hiderCompass.value = ValueConverter.ConvertToString(lobbyData.hiderCompass);
         _taunts.value = ValueConverter.ConvertToString(lobbyData.taunts);
