@@ -333,12 +333,14 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void EndRound(RainWorldGame game) {
-        if (!lobbyData.endless || OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2) {
-            OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
-            return;
-        }
-        PrepareRound();
-        Plugin.Respawn(game, lobbyData.startingShelter);
+        // TODO: make endless not go to lobby
+        OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
+        //if (!lobbyData.endless || OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2) {
+        //    OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
+        //    return;
+        //}
+        //PrepareRound();
+        //Plugin.Respawn(game, lobbyData.startingShelter);
     }
 
     public override void GameShutDown(RainWorldGame game) {
