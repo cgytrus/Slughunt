@@ -49,6 +49,14 @@ public sealed record PlayerData {
     public long totalScore => (long)caughtAsHunter - caughtAsHider;
     public long totalTime => (long)timeAsHider - timeAsHunter;
 
+    public void ResetCurrentTimers() {
+        uint savedTimeAsHider = timeAsHider;
+        uint savedTimeAsHunter = timeAsHunter;
+        changedStateAt = OnlineManager.lobby.owner.tick;
+        timeAsHider = savedTimeAsHider;
+        timeAsHunter = savedTimeAsHunter;
+    }
+
     public void SwitchSide() {
         switch (role) {
             case PlayerRole.None:

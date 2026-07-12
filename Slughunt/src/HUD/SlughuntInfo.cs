@@ -46,7 +46,8 @@ public class SlughuntInfo : HudPart {
                 return;
             case GameState.Hide:
                 _stateLabel.text = $"Hide: {SpeedRunTimer.TimeFormat(lobbyData.hideTime - time)}";
-                break;
+                _scoreLabel.isVisible = false;
+                return;
             case GameState.Hunt:
                 _stateLabel.text = $"Hunt: {SpeedRunTimer.TimeFormat(time)}";
                 break;
@@ -63,10 +64,7 @@ public class SlughuntInfo : HudPart {
         }
         _scoreLabel.isVisible = true;
 
-        if (playerData.dead)
-            return;
-
-        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.currentStateFor / fps);
+        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.dead ? 0d : playerData.currentStateFor / fps);
         TimeSpan totalTime = TimeSpan.FromSeconds(playerData.totalTime / fps) + (hunter ? -roleTime : roleTime);
 
         _scoreLabel.text = $"""

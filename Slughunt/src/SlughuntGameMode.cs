@@ -262,7 +262,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void SetupTick(RainWorldGame game) {
-        // TODO: this is still counting hunter/hider time
         StunOrManageShortcut(game, false);
         if (!lobby.isOwner)
             return;
@@ -292,6 +291,8 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             return;
         if (lobby.owner.tick - lobbyData.switchedStateAt < (long)lobbyData.hideTimeFrames)
             return;
+        foreach (OnlinePlayer player in OnlineManager.players)
+            lobbyData.GetPlayerData(player).ResetCurrentTimers();
         lobbyData.state = GameState.Hunt;
         lobby.NewVersion();
     }
