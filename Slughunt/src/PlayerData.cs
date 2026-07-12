@@ -5,7 +5,19 @@ namespace Slughunt;
 
 public sealed record PlayerData {
     public bool ready { get; set; }
-    public PlayerRole role { get; set; }
+
+    public PlayerRole role {
+        get;
+        set {
+            if (field == PlayerRole.Hunter)
+                timeAsHunter += OnlineManager.lobby.owner.tick - switchedRolesAt;
+            else if (field == PlayerRole.Hider)
+                timeAsHider += OnlineManager.lobby.owner.tick - switchedRolesAt;
+            field = value;
+            switchedRolesAt = OnlineManager.lobby.owner.tick;
+        }
+    }
+
     public uint switchedRolesAt { get; private set; }
     public uint timeAsHunter { get; private set; }
     public uint timeAsHider { get; private set; }
@@ -28,17 +40,14 @@ public sealed record PlayerData {
                 break;
             case PlayerRole.Hunter:
                 role = PlayerRole.Hider;
-                timeAsHunter += OnlineManager.mePlayer.tick - switchedRolesAt;
                 break;
             case PlayerRole.Hider:
                 role = PlayerRole.Hunter;
-                timeAsHider += OnlineManager.mePlayer.tick - switchedRolesAt;
                 break;
             default:
                 Plugin.logger.LogError($"unknown role? {role}");
                 break;
         }
-        switchedRolesAt = OnlineManager.mePlayer.tick;
     }
 
     public void Write(BinaryWriter writer) {
