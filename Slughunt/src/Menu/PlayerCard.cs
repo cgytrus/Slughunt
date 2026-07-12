@@ -9,7 +9,7 @@ namespace Slughunt.Menu;
 
 public class PlayerCard : PositionedMenuObject {
     public const float Width = 300f;
-    public const float Height = 18f * 3f;
+    public const float Height = 16f * 3f;
     public const float Padding = 5f;
 
     private readonly OnlinePlayer _player;
@@ -43,7 +43,7 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_nameLabel);
 
-        _hostLabel = new ProperlyAlignedMenuLabel(menu, this, "(host)", new Vector2(0f, -18f),
+        _hostLabel = new ProperlyAlignedMenuLabel(menu, this, "(host)", new Vector2(0f, -16f),
             new Vector2(Width, Height), false) {
             label = {
                 alignment = FLabelAlignment.Left,
@@ -65,7 +65,7 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_totalScoreLabel);
 
-        _hunterScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, -18f),
+        _hunterScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, -16f),
             new Vector2(Width, Height), false) {
             label = {
                 alignment = FLabelAlignment.Right,
@@ -76,7 +76,7 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_hunterScoreLabel);
 
-        _hiderScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, -36f),
+        _hiderScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, -32f),
             new Vector2(Width, Height), false) {
             label = {
                 alignment = FLabelAlignment.Right,

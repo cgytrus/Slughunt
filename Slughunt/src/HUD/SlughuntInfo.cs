@@ -17,8 +17,8 @@ public class SlughuntInfo : HudPart {
 
     public SlughuntInfo(global::HUD.HUD hud, FContainer container) : base(hud) {
         _stateLabel = new FLabel(Custom.GetDisplayFont(), "paws") {
-            x = 20f,
-            y = hud.rainWorld.options.ScreenSize.y - 20f,
+            x = 0.01f + 20f,
+            y = 0.01f + hud.rainWorld.options.ScreenSize.y - 20f,
             alignment = FLabelAlignment.Left,
             anchorX = 0.0f,
             anchorY = 1.0f
@@ -75,5 +75,6 @@ public class SlughuntInfo : HudPart {
     public override void ClearSprites() {
         base.ClearSprites();
         _stateLabel.RemoveFromContainer();
+        _scoreLabel.RemoveFromContainer();
     }
 }
