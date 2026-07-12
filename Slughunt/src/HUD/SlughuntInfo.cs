@@ -62,7 +62,8 @@ public class SlughuntInfo : HudPart {
             return;
         }
 
-        TimeSpan roleTime = TimeSpan.FromSeconds((lobby.owner.tick - playerData.switchedRolesAt) / fps);
+        uint lastAliveTick = playerData.dead ? playerData.diedAt : lobby.owner.tick;
+        TimeSpan roleTime = TimeSpan.FromSeconds((lastAliveTick - playerData.switchedRolesAt) / fps);
         TimeSpan totalTime = TimeSpan.FromSeconds(playerData.totalTime / fps) + (hunter ? -roleTime : roleTime);
 
         _scoreLabel.text = $"""

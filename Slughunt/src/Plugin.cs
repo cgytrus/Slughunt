@@ -405,6 +405,17 @@ public partial class Plugin : BaseUnityPlugin {
     }
 
     private static void RespawnRule() {
+        On.Player.Die += (orig, self) => {
+            bool alreadyWasDead = self.dead;
+            orig(self);
+            if (self != self.room.game.FirstRealizedPlayer)
+                return;
+            if (alreadyWasDead)
+                return;
+            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+                return;
+            gameMode.lobby.owner.InvokeRPC(HostOnDeath);
+        };
         On.RainWorldGame.GoToDeathScreen += (orig, self) => {
             if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode)) {
                 orig(self);
@@ -424,6 +435,14 @@ public partial class Plugin : BaseUnityPlugin {
 
             gameMode.lobby.owner.InvokeRPC(HostOnRespawn);
         };
+    }
+
+    [RPCMethod]
+    private static void HostOnDeath(RPCEvent rpcEvent) {
+        if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            return;
+        gameMode.lobbyData.GetPlayerData(rpcEvent.from).Die();
+        gameMode.lobby.NewVersion();
     }
 
     // seems to work fine?
@@ -498,16 +517,16 @@ public partial class Plugin : BaseUnityPlugin {
         Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(playerData.role);
         switch (rule) {
             case Rules.OnRespawn.Nothing:
+                playerData.role = playerData.role; // reset death flag
                 break;
             case Rules.OnRespawn.SwitchSide:
                 playerData.SwitchSide();
-                gameMode.lobby.NewVersion();
                 break;
             default:
+                playerData.role = playerData.role; // reset death flag
                 logger.LogError($"unknown rule? {rule}");
                 break;
         }
+        gameMode.lobby.NewVersion();
     }
-
-    // TODO: save death time on death and subtract it from role time on respawn
 }

@@ -9,18 +9,23 @@ public sealed record PlayerData {
     public PlayerRole role {
         get;
         set {
-            if (field == value)
+            if (field == value && !dead)
                 return;
+            uint tick = dead ? diedAt : OnlineManager.lobby.owner.tick;
+            dead = false; // cant switch roles without respawning
             if (field == PlayerRole.Hunter)
-                timeAsHunter += OnlineManager.lobby.owner.tick - switchedRolesAt;
+                timeAsHunter += tick - switchedRolesAt;
             else if (field == PlayerRole.Hider)
-                timeAsHider += OnlineManager.lobby.owner.tick - switchedRolesAt;
+                timeAsHider += tick - switchedRolesAt;
             field = value;
             switchedRolesAt = OnlineManager.lobby.owner.tick;
         }
     }
-
     public uint switchedRolesAt { get; private set; }
+
+    public bool dead { get; private set; }
+    public uint diedAt { get; private set; }
+
     public uint timeAsHunter { get; private set; }
     public uint timeAsHider { get; private set; }
     public uint caughtAsHunter { get; set; }
@@ -52,10 +57,17 @@ public sealed record PlayerData {
         }
     }
 
+    public void Die() {
+        dead = true;
+        diedAt = OnlineManager.lobby.owner.tick;
+    }
+
     public void Write(BinaryWriter writer) {
         writer.Write(ready);
         writer.Write((byte)role);
         writer.Write(switchedRolesAt);
+        writer.Write(dead);
+        writer.Write(diedAt);
         writer.Write(timeAsHunter);
         writer.Write(timeAsHider);
         writer.Write(caughtAsHunter);
@@ -66,6 +78,8 @@ public sealed record PlayerData {
         ready = reader.ReadBoolean(),
         role = (PlayerRole)reader.ReadByte(),
         switchedRolesAt = reader.ReadUInt32(),
+        dead = reader.ReadBoolean(),
+        diedAt = reader.ReadUInt32(),
         timeAsHunter = reader.ReadUInt32(),
         timeAsHider = reader.ReadUInt32(),
         caughtAsHunter = reader.ReadUInt32(),
