@@ -12,6 +12,9 @@ public sealed record PlayerData {
     public uint caughtAsHunter { get; set; }
     public uint caughtAsHider { get; set; }
 
+    public long totalScore => (long)caughtAsHunter - caughtAsHider;
+    public long totalTime => (long)timeAsHider - timeAsHunter;
+
     public void SwitchSide() {
         switch (role) {
             case PlayerRole.None:

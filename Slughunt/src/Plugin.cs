@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using MonoMod.RuntimeDetour;
 using MoreSlugcats;
 using RainMeadow;
+using Slughunt.HUD;
 using UnityEngine;
 
 namespace Slughunt;
@@ -250,6 +251,12 @@ public partial class Plugin : BaseUnityPlugin {
                 PlayerRole.Hider => 4,
                 _ => 9
             }, 9);
+        };
+        On.HUD.HUD.InitSinglePlayerHud += (orig, self, cam) => {
+            orig(self, cam);
+            if (!SlughuntGameMode.IsIn())
+                return;
+            self.AddPart(new SlughuntInfo(self, self.fContainers[0]));
         };
     }
 

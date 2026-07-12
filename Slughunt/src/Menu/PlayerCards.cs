@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Slughunt.Menu;
 
 public class PlayerCards : RectangularMenuObject {
-    private const int MaxShownPlayers = 20;
+    private const int MaxShownPlayers = 8;
     private readonly List<PlayerCard> _cards = [];
     private int _playersScroll;
 

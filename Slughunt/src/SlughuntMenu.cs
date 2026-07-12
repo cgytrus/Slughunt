@@ -86,7 +86,7 @@ public class SlughuntMenu : SmartMenu {
         _forceStartButton.OnPressDone += _ => gameMode.StartGame();
         _ = new UIelementWrapper(tabWrapper, _forceStartButton);
 
-        _players = new PlayerCards(this, mainPage, new Vector2(100f, 680f - 24f));
+        _players = new PlayerCards(this, mainPage, new Vector2(50f, 680f - 24f));
         mainPage.subObjects.Add(_players);
         _players.UpdatePlayerCards();
         MatchmakingManager.OnPlayerListReceived += OnPlayerListReceived;
@@ -95,7 +95,7 @@ public class SlughuntMenu : SmartMenu {
         SimplerButton colorsButton = new(
             this, mainPage,
             "COLORS",
-            _players.pos + new Vector2(PlayerCard.Width + 10f, -30f), new Vector2(110f, 30f)
+            _players.pos + new Vector2(PlayerCard.Width + 20f, -30f), new Vector2(110f, 30f)
         );
         colorsButton.OnClick += _ => {
             ColorSlugcatDialog colorDialog = new(manager, SlughuntGameMode.save, () => {
@@ -111,8 +111,8 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel targetHunterCountLabel = new(
             this, mainPage,
             "Target hunter count",
-            colorsButton.pos - new Vector2(0f, colorsButton.size.y + 20f),
-            new Vector2(labelsWidth, 24f),
+            colorsButton.pos - new Vector2(0f, 30f + 10f),
+            new Vector2(labelsWidth, 30f),
             false
         ) {
             labelPosAlignment = FLabelAlignment.Left,
@@ -134,7 +134,7 @@ public class SlughuntMenu : SmartMenu {
 
         _allowHunterPreference = new SimplerCheckbox(
             this, mainPage,
-            targetHunterCountLabel.pos - new Vector2(0f, targetHunterCountLabel.size.y + 10f),
+            targetHunterCountLabel.pos - new Vector2(0f, 24f + 10f),
             42f, "Allow hunter preference", true
         );
         _allowHunterPreference.OnClick += value => {
@@ -148,7 +148,7 @@ public class SlughuntMenu : SmartMenu {
 
         _allowHiderPreference = new SimplerCheckbox(
             this, mainPage,
-            _allowHunterPreference.pos - new Vector2(0f, _allowHunterPreference.size.y + 10f),
+            _allowHunterPreference.pos - new Vector2(0f, 24f + 10f),
             42f, "Allow hider preference", true
         );
         _allowHiderPreference.OnClick += value => {
@@ -163,8 +163,8 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel hideTimeLabel = new(
             this, mainPage,
             "Hide time (seconds)",
-            _allowHiderPreference.pos - new Vector2(0f, _allowHiderPreference.size.y + 20f),
-            new Vector2(labelsWidth, 24f),
+            _allowHiderPreference.pos - new Vector2(0f, 30f + 10f),
+            new Vector2(labelsWidth, 30f),
             false
         ) {
             labelPosAlignment = FLabelAlignment.Left,
@@ -187,7 +187,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel rulesetPresetLabel = new(
             this, mainPage,
             "Ruleset",
-            hideTimeLabel.pos - new Vector2(0f, hideTimeLabel.size.y + 10f),
+            hideTimeLabel.pos - new Vector2(0f, 24f + 10f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -218,7 +218,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel rulesetHiderLabel = new(
             this, mainPage,
             "Hider (catch/respawn)",
-            rulesetPresetLabel.pos - new Vector2(-10f, rulesetPresetLabel.size.y + 5f),
+            rulesetPresetLabel.pos - new Vector2(-10f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -261,7 +261,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel rulesetHunterLabel = new(
             this, mainPage,
             "Hunter (catch/respawn)",
-            rulesetHiderLabel.pos - new Vector2(0f, rulesetHiderLabel.size.y + 5f),
+            rulesetHiderLabel.pos - new Vector2(0f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -304,7 +304,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel hunterCompassLabel = new(
             this, mainPage,
             "Hunter compass",
-            rulesetHunterLabel.pos - new Vector2(10f, rulesetHunterLabel.size.y + 20f),
+            rulesetHunterLabel.pos - new Vector2(10f, 24f + 10f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -328,7 +328,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel hiderCompassLabel = new(
             this, mainPage,
             "Hider compass",
-            hunterCompassLabel.pos - new Vector2(0f, hunterCompassLabel.size.y + 10f),
+            hunterCompassLabel.pos - new Vector2(0f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -352,7 +352,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel tauntsLabel = new(
             this, mainPage,
             "Taunts",
-            hiderCompassLabel.pos - new Vector2(0f, hiderCompassLabel.size.y + 10f),
+            hiderCompassLabel.pos - new Vector2(0f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
