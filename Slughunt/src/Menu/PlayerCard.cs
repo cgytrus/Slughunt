@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text;
 using Menu;
-using MoreSlugcats;
 using RainMeadow;
+using Slughunt.HUD;
 using UnityEngine;
 
 namespace Slughunt.Menu;
@@ -112,12 +112,11 @@ public class PlayerCard : PositionedMenuObject {
         };
 
         double fps = OnlineManager.instance.framesPerSecond;
-        TimeSpan totalTime = TimeSpan.FromSeconds(data.totalTime / fps);
-        TimeSpan timeAsHunter = TimeSpan.FromSeconds(data.timeAsHunter / fps);
-        TimeSpan timeAsHider = TimeSpan.FromSeconds(data.timeAsHider / fps);
-        // TODO: this doesnt format negative timespans correctly
-        _totalScoreLabel.label.text = $"total: {data.totalScore} / {SpeedRunTimer.TimeFormat(totalTime)}";
-        _hunterScoreLabel.label.text = $"hunter: {data.caughtAsHunter} / -{SpeedRunTimer.TimeFormat(timeAsHunter)}";
-        _hiderScoreLabel.label.text = $"hider: -{data.caughtAsHider} / {SpeedRunTimer.TimeFormat(timeAsHider)}";
+        string totalTime = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.totalTime / fps));
+        string timeAsHunter = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.timeAsHunter / fps), "+", "-");
+        string timeAsHider = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.timeAsHider / fps), "-", "+");
+        _totalScoreLabel.label.text = $"total: {data.totalScore} / {totalTime}";
+        _hunterScoreLabel.label.text = $"hunter: +{data.caughtAsHunter} / {timeAsHunter}";
+        _hiderScoreLabel.label.text = $"hider: -{data.caughtAsHider} / {timeAsHider}";
     }
 }

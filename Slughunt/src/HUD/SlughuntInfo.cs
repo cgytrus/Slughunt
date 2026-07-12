@@ -1,6 +1,5 @@
 ﻿using System;
 using HUD;
-using MoreSlugcats;
 using RainMeadow;
 using RWCustom;
 
@@ -45,11 +44,11 @@ public class SlughuntInfo : HudPart {
                 _scoreLabel.isVisible = false;
                 return;
             case GameState.Hide:
-                _stateLabel.text = $"Hide: {SpeedRunTimer.TimeFormat(lobbyData.hideTime - time)}";
+                _stateLabel.text = $"Hide: {FormatTime(time - lobbyData.hideTime, "", "-")}";
                 _scoreLabel.isVisible = false;
                 return;
             case GameState.Hunt:
-                _stateLabel.text = $"Hunt: {SpeedRunTimer.TimeFormat(time)}";
+                _stateLabel.text = $"Hunt: {FormatTime(time)}";
                 break;
             case GameState.Lobby:
             default:
@@ -68,8 +67,8 @@ public class SlughuntInfo : HudPart {
         TimeSpan totalTime = TimeSpan.FromSeconds(playerData.totalTime / fps) + (hunter ? -roleTime : roleTime);
 
         _scoreLabel.text = $"""
-            {(hunter ? "Hunting" : "Hiding")} for {SpeedRunTimer.TimeFormat(roleTime)}
-            Total: {playerData.totalScore} / {SpeedRunTimer.TimeFormat(totalTime)}
+            {(hunter ? "Hunting" : "Hiding")} for {FormatTime(roleTime)}
+            Total: {playerData.totalScore} / {FormatTime(totalTime)}
             """;
     }
 
@@ -77,5 +76,17 @@ public class SlughuntInfo : HudPart {
         base.ClearSprites();
         _stateLabel.RemoveFromContainer();
         _scoreLabel.RemoveFromContainer();
+    }
+
+    public static string FormatTime(TimeSpan time, string neg = "-", string pos = "") {
+        bool negative = time.Ticks < 0;
+        int seconds = Math.Abs((int)Math.Floor(time.TotalSeconds));
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        int hours = minutes / 60;
+        if (hours == 0)
+            return $"{(negative ? neg : pos)}{minutes}:{seconds:D2}";
+        minutes = minutes % 60;
+        return $"{(negative ? neg : pos)}{hours}:{minutes:D2}:{seconds:D2}";
     }
 }
