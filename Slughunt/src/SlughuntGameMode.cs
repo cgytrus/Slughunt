@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Menu;
 using RainMeadow;
 using UnityEngine;
 
@@ -34,7 +33,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     public static bool IsIn() => OnlineManager.lobby?.gameMode is SlughuntGameMode;
 
     public override ProcessManager.ProcessID MenuProcessId() => SlughuntMenu.id;
-    public override PauseMenu CustomPauseMenu(ProcessManager manager, RainWorldGame game) => base.CustomPauseMenu(manager, game); // TODO?
 
     public override bool AllowedInMode(PlacedObject item) => !Blacklist.HasPlacedObject(item);
 
@@ -323,14 +321,12 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             return;
         bool anyHunters = false;
         bool anyHiders = false;
-        foreach (ClientSettings settings in lobby.clientSettings.Values) {
-            PlayerData data = lobbyData.GetPlayerData(settings.owner);
-            anyHunters = anyHunters || data.role == PlayerRole.Hunter && (lobbyData.endless || settings.avatars
-                .Any(x => x.FindEntity(true) is OnlineCreature { abstractCreature.state.alive: true }));
-            anyHiders = anyHiders || data.role == PlayerRole.Hider && (lobbyData.endless || settings.avatars
-                .Any(x => x.FindEntity(true) is OnlineCreature { abstractCreature.state.alive: true }));
-            if (anyHiders && anyHunters)
-                break;
+        foreach (OnlinePlayer player in OnlineManager.players) {
+            PlayerData data = lobbyData.GetPlayerData(player);
+            if (!data.ready)
+                continue;
+            anyHunters = anyHunters || data.role == PlayerRole.Hunter && (lobbyData.endless || !data.dead);
+            anyHiders = anyHiders || data.role == PlayerRole.Hider && (lobbyData.endless || !data.dead);
         }
         if (!anyHunters || !anyHiders)
             EndRound(game);
@@ -347,13 +343,29 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
 
     public override void GameShutDown(RainWorldGame game) {
         base.GameShutDown(game);
-        if (!lobby.isOwner)
+        if (!lobby.isOwner) {
+            if (lobbyData.state == GameState.Lobby)
+                return;
+            lobby.owner.InvokeOnceRPC(HostWantExit);
             return;
+        }
         foreach (PlayerData data in OnlineManager.players.Select(x => lobbyData.GetPlayerData(x))) {
             data.ready = false;
             data.role = PlayerRole.None;
             data.dead = false;
         }
         lobby.NewVersion();
+    }
+
+    [RPCMethod]
+    private static void HostWantExit(RPCEvent rpcEvent) {
+        LobbyData lobbyData = OnlineManager.lobby.GetData<LobbyData>();
+        if (lobbyData.state == GameState.Lobby)
+            return;
+        PlayerData playerData = lobbyData.GetPlayerData(rpcEvent.from);
+        playerData.ready = false;
+        playerData.role = PlayerRole.None;
+        playerData.dead = false;
+        OnlineManager.lobby.NewVersion();
     }
 }
