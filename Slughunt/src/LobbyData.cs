@@ -35,8 +35,17 @@ public class LobbyData : OnlineResource.ResourceData {
     public TauntMode taunts { get; set; } = TauntMode.Off; // TODO
 
     // gameplay state
-    public GameState state { get; set; }
-    public uint switchedStateAt { get; set; }
+    public GameState state {
+        get;
+        set {
+            if (field == value)
+                return;
+            field = value;
+            switchedStateAt = OnlineManager.lobby.owner.tick;
+        }
+    }
+
+    public uint switchedStateAt { get; private set; }
     private Dictionary<OnlinePlayer, PlayerData> playerData { get; } = [];
 
     public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;

@@ -61,7 +61,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (!lobby.isOwner)
             return;
         lobbyData.state = GameState.Lobby;
-        lobbyData.switchedStateAt = lobby.owner.tick;
+        lobby.NewVersion();
     }
 
     public LobbyData lobbyData => lobby.GetData<LobbyData>();
@@ -142,12 +142,10 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         ProcessManager.ProcessID? process = OnlineManager.instance.manager.currentMainLoop?.ID;
         if (lobbyData.state != GameState.Lobby && process != ProcessManager.ProcessID.Game) {
             lobbyData.state = GameState.Lobby;
-            lobbyData.switchedStateAt = lobby.owner.tick;
             lobby.NewVersion();
         }
         else if (lobbyData.state == GameState.Lobby && process == ProcessManager.ProcessID.Game) {
             lobbyData.state = GameState.Setup;
-            lobbyData.switchedStateAt = lobby.owner.tick;
             lobby.NewVersion();
         }
         // once we are in game we control the state based on the gameplay in LobbyTick
@@ -194,10 +192,9 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     private void PrepareRound() {
         if (!lobby.isOwner)
             return;
-        lobbyData.state = GameState.Setup;
-        lobbyData.switchedStateAt = lobby.owner.tick;
         lobbyData.startingShelter = lobbyData.RandomShelter();
         AssignRoles();
+        lobbyData.state = GameState.Setup;
         lobby.NewVersion();
     }
 
@@ -271,25 +268,33 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (!lobby.isOwner)
             return;
         bool allHidersInShortcuts = true;
-        foreach (ClientSettings settings in lobby.clientSettings.Values) {
-            PlayerData data = lobbyData.GetPlayerData(settings.owner);
+        foreach (OnlinePlayer player in OnlineManager.players) {
+            PlayerData data = lobbyData.GetPlayerData(player);
+            if (!data.ready)
+                continue;
             if (data.role != PlayerRole.Hider)
                 continue;
-            allHidersInShortcuts = allHidersInShortcuts && settings.avatars
-                .All(x => x.FindEntity(true) is OnlineCreature {
-                    realized: true,
-                    realizedCreature.inShortcut: true
+            allHidersInShortcuts = allHidersInShortcuts &&
+                lobby.clientSettings.TryGetValue(player, out ClientSettings settings) &&
+                settings.inGame &&
+                settings.avatars.All(x => x.FindEntity(true) is OnlineCreature {
+                    realized: true, realizedCreature.inShortcut: true
                 });
         }
         if (!allHidersInShortcuts)
             return;
         lobbyData.state = GameState.Hide;
-        lobbyData.switchedStateAt = lobby.owner.tick;
         lobby.NewVersion();
     }
 
     private void HideTick(RainWorldGame game) {
         StunOrManageShortcut(game, true);
+        if (!lobby.isOwner)
+            return;
+        if (lobby.owner.tick - lobbyData.switchedStateAt < (long)lobbyData.hideTimeFrames)
+            return;
+        lobbyData.state = GameState.Hunt;
+        lobby.NewVersion();
     }
 
     private void StunOrManageShortcut(RainWorldGame game, bool hide) {
@@ -298,7 +303,8 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             return;
         switch (playerData.role) {
             case PlayerRole.Hunter:
-                player.stun = (int)(40 * lobbyData.hideTime.TotalSeconds);
+                if (!hide)
+                    player.stun = (int)(40 * lobbyData.hideTime.TotalSeconds);
                 break;
             case PlayerRole.Hider when player.inShortcut:
                 player.inShortcutVessel?.wait = hide ? 0 : 2;

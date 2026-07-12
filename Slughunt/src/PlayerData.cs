@@ -9,6 +9,8 @@ public sealed record PlayerData {
     public PlayerRole role {
         get;
         set {
+            if (field == value)
+                return;
             if (field == PlayerRole.Hunter)
                 timeAsHunter += OnlineManager.lobby.owner.tick - switchedRolesAt;
             else if (field == PlayerRole.Hider)

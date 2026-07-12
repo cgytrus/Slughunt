@@ -369,7 +369,7 @@ public partial class Plugin : BaseUnityPlugin {
     private static void ApplyCatchRule(SlughuntGameMode gameMode, OnlinePlayer player, PlayerData data) {
         bool die = false;
         int stun = 0;
-        Rules.OnCatch rule = gameMode.lobbyData.ruleset.GetCatchRuleFor(gameMode.playerData.role);
+        Rules.OnCatch rule = gameMode.lobbyData.ruleset.GetCatchRuleFor(data.role);
         switch (rule) {
             case Rules.OnCatch.Nothing:
                 break;
@@ -508,4 +508,6 @@ public partial class Plugin : BaseUnityPlugin {
                 break;
         }
     }
+
+    // TODO: save death time on death and subtract it from role time on respawn
 }
