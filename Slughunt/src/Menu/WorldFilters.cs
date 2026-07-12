@@ -32,6 +32,8 @@ public class WorldFilters : RectangularMenuObject {
     private readonly List<string> _rooms = [];
     private readonly List<LobbyData.Shortcut> _shortcuts = [];
 
+    private readonly List<OpComboBox2> _workaroundToMove = [];
+
     public WorldFilters(global::Menu.Menu menu, MenuObject owner, Vector2 pos) : base(menu, owner, pos, new Vector2()) {
         _selectors = new MenuTabWrapper(menu, this);
         subObjects.Add(_selectors);
@@ -159,6 +161,13 @@ public class WorldFilters : RectangularMenuObject {
                 afterSize.x / count - padding * 0.5f * (count - 1),
                 [new ListItem("", "------")]
             );
+            // i love working with ui in rain world
+            // honestly, i could even do it all day every day!
+            // (this makes the lists properly expand downward instead of upward)
+            comboBox.OnListOpen += _ => {
+                comboBox._pos.y += pos.y;
+                _workaroundToMove.Add(comboBox);
+            };
             _ = new UIelementWrapper(_selectors, comboBox);
             return comboBox;
         }
@@ -183,6 +192,13 @@ public class WorldFilters : RectangularMenuObject {
                 };
             })
             .ToArray());
+    }
+
+    public override void Update() {
+        base.Update();
+        foreach (OpComboBox2 element in _workaroundToMove)
+            element._pos.y -= pos.y;
+        _workaroundToMove.Clear();
     }
 
     private void UpdateSelectors(string region) {
