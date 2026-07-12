@@ -54,6 +54,7 @@ public partial class Plugin : BaseUnityPlugin {
         LockShortcuts();
         UnlockGates();
         UnlockMap();
+        RoleColors();
         CustomHud();
         CustomSpawn();
         CatchRule();
@@ -233,6 +234,27 @@ public partial class Plugin : BaseUnityPlugin {
             if (SlughuntGameMode.IsIn())
                 return;
             orig(self, shelterName);
+        };
+    }
+
+    private static void RoleColors() {
+        On.PlayerGraphics.DrawSprites += (orig, self, sLeaser, rCam, timeStacker, camPos) => {
+            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode) ||
+                !self.player.abstractPhysicalObject.GetOnlineObject(out OnlinePhysicalObject? opo) ||
+                opo?.owner is null) {
+                orig(self, sLeaser, rCam, timeStacker, camPos);
+                return;
+            }
+            PlayerData data = gameMode.lobbyData.GetPlayerData(opo.owner);
+            if (data.role != PlayerRole.Hunter) {
+                self.markAlpha = 0.0f;
+                orig(self, sLeaser, rCam, timeStacker, camPos);
+                return;
+            }
+            self.markAlpha = 1.0f;
+            sLeaser.sprites[10].color = new HSLColor(12f / 360f, 1.0f, 0.55f).rgb;
+            sLeaser.sprites[11].color = Color.Lerp(sLeaser.sprites[10].color, Color.white, 0.3f);
+            orig(self, sLeaser, rCam, timeStacker, camPos);
         };
     }
 
