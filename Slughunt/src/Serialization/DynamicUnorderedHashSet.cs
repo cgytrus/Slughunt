@@ -49,19 +49,31 @@ public abstract class DynamicUnorderedHashSet<T, TImp> : IDelta<TImp>, Serialize
         } : nullDelta;
     }
 
-    public TImp ApplyDelta(TImp? current) {
-        return current ?? (TImp)this;
+    public TImp ApplyDelta(TImp? delta) {
+        if (delta is null)
+            return new TImp { added = added };
+        TImp next = new() {
+            added = []
+        };
+        foreach (T x in added!)
+            next.added.Add(x);
+        if (delta.added is not null) {
+            foreach (T x in delta.added)
+                next.added.Add(x);
+        }
+        if (delta.removed is not null) {
+            foreach (T x in delta.removed)
+                next.added.Remove(x);
+        }
+        return next;
     }
 
     public void ReadTo(HashSet<T> current) {
-        if (added is not null) {
-            foreach (T x in added)
-                current.Add(x);
-        }
-        if (removed is not null) {
-            foreach (T x in removed)
-                current.Remove(x);
-        }
+        current.Clear();
+        if (added is null)
+            return;
+        foreach (T x in added)
+            current.Add(x);
     }
 
     public abstract void CustomSerialize(Serializer serializer);

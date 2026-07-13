@@ -43,19 +43,31 @@ public abstract class DynamicDictionary<TKey, TValue, TImp> : IDelta<TImp>, Seri
         } : nullDelta;
     }
 
-    public TImp ApplyDelta(TImp? current) {
-        return current ?? (TImp)this;
+    public TImp ApplyDelta(TImp? delta) {
+        if (delta is null)
+            return new TImp { added = added };
+        TImp next = new() {
+            added = []
+        };
+        foreach (KeyValuePair<TKey, TValue> x in added!)
+            next.added.Add(x.Key, x.Value);
+        if (delta.added is not null) {
+            foreach (KeyValuePair<TKey, TValue> x in delta.added)
+                next.added.Add(x.Key, x.Value);
+        }
+        if (delta.removed is not null) {
+            foreach (TKey x in delta.removed.Keys)
+                next.added.Remove(x);
+        }
+        return next;
     }
 
     public void ReadTo(Dictionary<TKey, TValue> current) {
-        if (added is not null) {
-            foreach (KeyValuePair<TKey, TValue> x in added)
-                current[x.Key] = x.Value;
-        }
-        if (removed is not null) {
-            foreach (TKey x in removed.Keys)
-                current.Remove(x);
-        }
+        current.Clear();
+        if (added is null)
+            return;
+        foreach (KeyValuePair<TKey, TValue> x in added)
+            current[x.Key] = x.Value;
     }
 
     public abstract void CustomSerialize(Serializer serializer);
