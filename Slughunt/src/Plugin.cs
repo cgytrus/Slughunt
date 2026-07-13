@@ -454,7 +454,7 @@ public partial class Plugin : BaseUnityPlugin {
                 return;
 
             Respawn(self, gameMode.lobbyData.RandomShelter());
-            self.cameras[0].hud.textPrompt.gameOverMode = false; // exit game over mode
+            self.playedGameOverSound = false; // allow the game over sound to play
             self.lastPauseButton = true; // prevent pause
             self.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
 
@@ -505,6 +505,10 @@ public partial class Plugin : BaseUnityPlugin {
         foreach (RoomCamera camera in game.cameras) {
             camera.virtualMicrophone.AllQuiet();
             camera.MoveCamera(room.realizedRoom, -1);
+            if (camera.hud is null)
+                continue;
+            camera.hud.ClearAllSprites();
+            camera.hud = null;
         }
     }
 
