@@ -55,8 +55,10 @@ public abstract class DynamicUnorderedHashSet<T, TImp> : IDelta<TImp>, Serialize
         TImp next = new() {
             added = []
         };
-        foreach (T x in added!)
-            next.added.Add(x);
+        if (added is not null) {
+            foreach (T x in added)
+                next.added.Add(x);
+        }
         if (delta.added is not null) {
             foreach (T x in delta.added)
                 next.added.Add(x);
