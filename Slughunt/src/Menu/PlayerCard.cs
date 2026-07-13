@@ -14,14 +14,15 @@ public class PlayerCard : PositionedMenuObject {
 
     private readonly OnlinePlayer _player;
     private static Lobby lobby => OnlineManager.lobby;
-    private static SlughuntGameMode gameMode => (SlughuntGameMode)lobby.gameMode;
     private static LobbyData lobbyData => lobby.GetData<LobbyData>();
     private PlayerData data => lobbyData.GetPlayerData(_player);
 
     private readonly string _name;
 
     private readonly ProperlyAlignedMenuLabel _nameLabel;
+    private readonly ProperlyAlignedMenuLabel _pingLabel;
     private readonly ProperlyAlignedMenuLabel _hostLabel;
+
     private readonly ProperlyAlignedMenuLabel _totalScoreLabel;
     private readonly ProperlyAlignedMenuLabel _hunterScoreLabel;
     private readonly ProperlyAlignedMenuLabel _hiderScoreLabel;
@@ -43,7 +44,18 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_nameLabel);
 
-        _hostLabel = new ProperlyAlignedMenuLabel(menu, this, "(host)", new Vector2(0f, -16f),
+        _pingLabel = new ProperlyAlignedMenuLabel(menu, this, "cock", new Vector2(0f, -16f),
+            new Vector2(Width, Height), false) {
+            label = {
+                alignment = FLabelAlignment.Left,
+                anchorX = 0.0f,
+                anchorY = 1.0f,
+                color = global::Menu.Menu.MenuRGB(global::Menu.Menu.MenuColors.MediumGrey)
+            }
+        };
+        subObjects.Add(_pingLabel);
+
+        _hostLabel = new ProperlyAlignedMenuLabel(menu, this, "(host)", new Vector2(0f, -32f),
             new Vector2(Width, Height), false) {
             label = {
                 alignment = FLabelAlignment.Left,
@@ -99,9 +111,6 @@ public class PlayerCard : PositionedMenuObject {
         if (lobby.clientSettings.TryGetValue(_player, out ClientSettings settings) && settings.inGame)
             _text.Append(" (in game)");
         _nameLabel.label.text = _text.ToString();
-
-        _hostLabel.label.isVisible = lobby.owner == _player;
-
         _nameLabel.label.color = data.role switch {
             PlayerRole.None => global::Menu.Menu.MenuRGB(data.ready ? global::Menu.Menu.MenuColors.White : global::Menu.Menu.MenuColors.MediumGrey),
             PlayerRole.PreferHunter => new HSLColor(12f / 360f, 0.65f, data.ready ? 0.67f : 0.5f).rgb,
@@ -110,6 +119,10 @@ public class PlayerCard : PositionedMenuObject {
             PlayerRole.Hider => new HSLColor(0.6f, 0.65f, 0.67f).rgb,
             _ => global::Menu.Menu.MenuRGB(global::Menu.Menu.MenuColors.White)
         };
+
+        _pingLabel.text = $"ping: {Math.Max(1, _player.ping - 16)}ms";
+
+        _hostLabel.label.isVisible = lobby.owner == _player;
 
         double fps = OnlineManager.instance.framesPerSecond;
         string totalTime = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.totalTime / fps));
