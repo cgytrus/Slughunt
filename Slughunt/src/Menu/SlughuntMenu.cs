@@ -6,10 +6,9 @@ using Menu.Remix.MixedUI;
 using MoreSlugcats;
 using RainMeadow;
 using RainMeadow.UI.Components;
-using Slughunt.Menu;
 using UnityEngine;
 
-namespace Slughunt;
+namespace Slughunt.Menu;
 
 public class SlughuntMenu : SmartMenu {
     public static ProcessManager.ProcessID id { get; } = new($"{nameof(SlughuntMenu)}+{Plugin.Id}", true);

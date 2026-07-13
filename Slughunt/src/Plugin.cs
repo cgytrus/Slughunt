@@ -8,6 +8,7 @@ using MonoMod.RuntimeDetour;
 using MoreSlugcats;
 using RainMeadow;
 using Slughunt.HUD;
+using Slughunt.Menu;
 using UnityEngine;
 
 namespace Slughunt;
