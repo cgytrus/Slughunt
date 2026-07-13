@@ -122,7 +122,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(targetHunterCountLabel);
         _targetHunterCount = new OpUpdown(
             new Configurable<int>(lobbyData.targetHunterCount, accept: new ConfigAcceptableRange<int>(0, ushort.MaxValue)),
-            targetHunterCountLabel.pos + new Vector2(labelsWidth + 5f, 0f), 80f
+            targetHunterCountLabel.pos + new Vector2(labelsWidth, 0f), 80f
         );
         _targetHunterCount._lastArrX = _targetHunterCount._arrX;
         _targetHunterCount.OnValueChanged += (_, _, _) => {
@@ -135,8 +135,8 @@ public class SlughuntMenu : SmartMenu {
 
         _allowHunterPreference = new SimplerCheckbox(
             this, mainPage,
-            targetHunterCountLabel.pos - new Vector2(0f, 24f + 10f),
-            42f, "Allow hunter preference", true
+            _targetHunterCount.pos - new Vector2(0f, 24f + 5f),
+            labelsWidth, "Allow hunter preference"
         );
         _allowHunterPreference.OnClick += value => {
             if (!lobby.isOwner)
@@ -149,8 +149,8 @@ public class SlughuntMenu : SmartMenu {
 
         _allowHiderPreference = new SimplerCheckbox(
             this, mainPage,
-            _allowHunterPreference.pos - new Vector2(0f, 24f + 10f),
-            42f, "Allow hider preference", true
+            _allowHunterPreference.pos - new Vector2(0f, 24f + 5f),
+            labelsWidth, "Allow hider preference"
         );
         _allowHiderPreference.OnClick += value => {
             if (!lobby.isOwner)
@@ -164,7 +164,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel hideTimeLabel = new(
             this, mainPage,
             "Hide time (seconds)",
-            _allowHiderPreference.pos - new Vector2(0f, 30f + 10f),
+            _allowHiderPreference.pos - new Vector2(labelsWidth, 30f + 5f),
             new Vector2(labelsWidth, 30f),
             false
         ) {
@@ -174,7 +174,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(hideTimeLabel);
         _hideTime = new OpUpdown(
             new Configurable<int>((int)lobbyData.hideTime.TotalSeconds, accept: new ConfigAcceptableRange<int>(0, int.MaxValue)),
-            hideTimeLabel.pos + new Vector2(labelsWidth + 5f, 0f), 80f
+            hideTimeLabel.pos + new Vector2(labelsWidth, 0f), 80f
         );
         _hideTime._lastArrX = _hideTime._arrX;
         _hideTime.OnValueChanged += (_, _, _) => {
@@ -198,7 +198,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(rulesetPresetLabel);
         _rulesetPreset = new OpResourceSelector2(
             new Configurable<Ruleset.PresetName>(lobbyData.ruleset.GetPresetName()),
-            rulesetPresetLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            rulesetPresetLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _rulesetPreset.OnValueChanged += (_, value, _) => {
@@ -304,8 +304,8 @@ public class SlughuntMenu : SmartMenu {
 
         _endless = new SimplerCheckbox(
             this, mainPage,
-            rulesetHunterLabel.pos - new Vector2(10f, 24f + 5f),
-            42f, "Endless", true
+            _rulesetHunterCatch.pos - new Vector2(0f, 24f + 5f),
+            labelsWidth, "Endless"
         );
         _endless.OnClick += value => {
             if (!lobby.isOwner)
@@ -319,7 +319,7 @@ public class SlughuntMenu : SmartMenu {
         AlignedMenuLabel hunterCompassLabel = new(
             this, mainPage,
             "Hunter compass",
-            _endless.pos - new Vector2(0f, 24f + 10f),
+            _endless.pos - new Vector2(labelsWidth, 24f + 10f),
             new Vector2(labelsWidth, 24f),
             false
         ) {
@@ -329,7 +329,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(hunterCompassLabel);
         _hunterCompass = new OpResourceSelector2(
             new Configurable<CompassMode>(lobbyData.hunterCompass),
-            hunterCompassLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            hunterCompassLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _hunterCompass.OnValueChanged += (_, value, _) => {
@@ -353,7 +353,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(hiderCompassLabel);
         _hiderCompass = new OpResourceSelector2(
             new Configurable<CompassMode>(lobbyData.hiderCompass),
-            hiderCompassLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            hiderCompassLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _hiderCompass.OnValueChanged += (_, value, _) => {
@@ -377,7 +377,7 @@ public class SlughuntMenu : SmartMenu {
         mainPage.subObjects.Add(tauntsLabel);
         _taunts = new OpResourceSelector2(
             new Configurable<TauntMode>(lobbyData.taunts),
-            tauntsLabel.pos + new Vector2(labelsWidth + 5f, 0f),
+            tauntsLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _taunts.OnValueChanged += (_, value, _) => {
