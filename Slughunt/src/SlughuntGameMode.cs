@@ -95,8 +95,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         avatarSettings.playerIndex = 0;
         avatarSettings.playingAs = character;
         avatarSettings.nickname = OnlineManager.mePlayer.id.name;
-        avatarSettings.wearingCape = false; // TODO
-        avatarSettings.eventCape = null;
         avatarSettings.fakePup = false;
         avatarSettings.overlaySkin = AvatarData.ConfigureOverlay(onlineCreature);
     }
