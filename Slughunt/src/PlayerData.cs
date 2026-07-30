@@ -6,6 +6,15 @@ namespace Slughunt;
 public sealed record PlayerData {
     public bool ready { get; set; }
 
+    public bool participating => participant.participating;
+    public Participant participant {
+        get {
+            LobbyData lobbyData = OnlineManager.lobby.GetData<LobbyData>();
+            int stun = role == PlayerRole.Hunter ? (int)((long)lobbyData.hideTimeFrames - currentStateFor) : 0;
+            return new Participant(role, stun, dead, lobbyData);
+        }
+    }
+
     public PlayerRole role {
         get;
         set {
@@ -29,7 +38,7 @@ public sealed record PlayerData {
     public uint changedStateAt {
         get;
         private set {
-            if (!dead) {
+            if (participating) {
                 if (role == PlayerRole.Hunter)
                     timeAsHunter += value - field;
                 else if (role == PlayerRole.Hider)

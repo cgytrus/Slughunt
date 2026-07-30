@@ -322,7 +322,9 @@ public partial class Plugin : BaseUnityPlugin {
         if (hiderObj is not Player hider)
             return;
 
-        if (!CanCatch(hunter.stun, hunter.dead, hider.dead, gameMode))
+        Participant hunterPart = new(PlayerRole.Hunter, hunter.stun, hunter.dead, gameMode.lobbyData);
+        Participant hiderPart = new(PlayerRole.Hider, hider.stun, hider.dead, gameMode.lobbyData);
+        if (!hunterPart.CanCatch(hiderPart))
             return;
 
         RainWorldGame game = hunter.room.game;
@@ -372,10 +374,7 @@ public partial class Plugin : BaseUnityPlugin {
             return;
         PlayerData hunterData = gameMode.lobbyData.GetPlayerData(hunter);
         PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
-        if (hunterData.role != PlayerRole.Hunter || hiderData.role != PlayerRole.Hider)
-            return;
-        int stun = (int)((long)gameMode.lobbyData.hideTimeFrames - hunterData.currentStateFor);
-        if (!CanCatch(stun, hunterData.dead, hiderData.dead, gameMode))
+        if (!hunterData.participant.CanCatch(hiderData.participant))
             return;
 
         hunterData.caughtAsHunter++;
@@ -425,10 +424,6 @@ public partial class Plugin : BaseUnityPlugin {
         // TODO: maybe play the sound for everyone in the room?
         player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
     }
-
-    private static bool CanCatch(int hunterStun, bool hunterDead, bool hiderDead, SlughuntGameMode gameMode) =>
-        hunterStun <= 0 && !hunterDead &&
-        (!hiderDead || gameMode.lobbyData.ruleset.hiderCatch != Rules.OnCatch.Death);
 
     private static void RespawnRule() {
         On.Player.Die += (orig, self) => {

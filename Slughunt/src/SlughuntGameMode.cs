@@ -324,8 +324,10 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             PlayerData data = lobbyData.GetPlayerData(player);
             if (!data.ready)
                 continue;
-            anyHunters = anyHunters || data.role == PlayerRole.Hunter && (lobbyData.endless || !data.dead);
-            anyHiders = anyHiders || data.role == PlayerRole.Hider && (lobbyData.endless || !data.dead);
+            if (data.role == PlayerRole.Hunter)
+                anyHunters = anyHunters || data.participating;
+            else if (data.role == PlayerRole.Hider)
+                anyHiders = anyHiders || data.participating;
         }
         if (!anyHunters || !anyHiders)
             EndRound(game);
