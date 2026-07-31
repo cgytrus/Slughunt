@@ -449,9 +449,7 @@ public partial class Plugin : BaseUnityPlugin {
                 return;
 
             Respawn(self, gameMode.lobbyData.RandomShelter());
-            self.playedGameOverSound = false; // allow the game over sound to play
             self.lastPauseButton = true; // prevent pause
-            self.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
 
             gameMode.lobby.owner.InvokeRPC(HostOnRespawn);
         };
@@ -505,6 +503,9 @@ public partial class Plugin : BaseUnityPlugin {
             camera.hud.ClearAllSprites();
             camera.hud = null;
         }
+
+        game.playedGameOverSound = false; // allow the game over sound to play
+        game.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
     }
 
     private static void LoadWorld(RainWorldGame game, string regionName) {

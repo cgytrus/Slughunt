@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -260,7 +261,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
                 HideTick(game);
                 break;
             case GameState.Hunt:
-                HuntTick(game);
+                HuntTick();
                 break;
             case GameState.Lobby:
             default:
@@ -270,6 +271,13 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void SetupTick(RainWorldGame game) {
+        if (
+            game.Players[0].slatedForDeletion ||
+            game.Players[0].state.dead ||
+            !string.Equals(game.Players[0].Room?.name, lobbyData.startingShelter, StringComparison.OrdinalIgnoreCase)
+        ) {
+            Plugin.Respawn(game, lobbyData.startingShelter);
+        }
         StunOrManageShortcut(game, false);
         if (!lobby.isOwner)
             return;
@@ -278,6 +286,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             PlayerData data = lobbyData.GetPlayerData(player);
             if (!data.ready)
                 continue;
+            data.dead = false;
             if (data.role != PlayerRole.Hider)
                 continue;
             allHidersInShortcuts = allHidersInShortcuts &&
@@ -324,7 +333,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         }
     }
 
-    private void HuntTick(RainWorldGame game) {
+    private void HuntTick() {
         if (!lobby.isOwner)
             return;
         bool anyHunters = false;
@@ -339,19 +348,41 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
                 anyHiders = anyHiders || data.participating;
         }
         if (!anyHunters || !anyHiders)
-            EndRound(game);
+            EndRound();
     }
 
-    private void EndRound(RainWorldGame game) {
-        // TODO: make endless not go to lobby
-        OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
-        //if (!lobbyData.endless || OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2) {
-        //    OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
-        //    return;
-        //}
-        // implement nextRound here, RandomSide should set preferences to None, SwitchSide to opposite of current role
-        //PrepareRound();
-        //Plugin.Respawn(game, lobbyData.startingShelter);
+    private void EndRound() {
+        if (!lobbyData.endless || OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2) {
+            OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
+            return;
+        }
+
+        IEnumerable<PlayerData> players = OnlineManager.players
+            .Select(x => lobbyData.GetPlayerData(x))
+            .Where(x => x.ready);
+        switch (lobbyData.ruleset.nextRound) {
+            case Rules.OnNextRound.RandomSide:
+                foreach (PlayerData data in players) {
+                    data.dead = false;
+                    data.role = PlayerRole.None;
+                }
+                break;
+            case Rules.OnNextRound.SwitchSide:
+                foreach (PlayerData data in players) {
+                    data.dead = false;
+                    data.role = data.role switch {
+                        PlayerRole.Hunter => PlayerRole.PreferHider,
+                        PlayerRole.Hider => PlayerRole.PreferHunter,
+                        _ => PlayerRole.None
+                    };
+                }
+                break;
+            default:
+                Plugin.logger.LogError($"unknown rule? {lobbyData.ruleset.nextRound}");
+                break;
+        }
+
+        PrepareRound();
     }
 
     public override void GameShutDown(RainWorldGame game) {
