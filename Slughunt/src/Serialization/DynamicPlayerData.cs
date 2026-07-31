@@ -3,12 +3,12 @@ using RainMeadow;
 
 namespace Slughunt.Serialization;
 
-public class DynamicPlayerData : DynamicDictionary<OnlinePlayer, PlayerData, DynamicPlayerData> {
+public class DynamicPlayerData : DynamicDictionary<ushort, PlayerData, DynamicPlayerData> {
     public DynamicPlayerData() { }
 
-    public DynamicPlayerData(Dictionary<OnlinePlayer, PlayerData> list) {
+    public DynamicPlayerData(Dictionary<ushort, PlayerData> list) {
         added = [];
-        foreach (KeyValuePair<OnlinePlayer, PlayerData> x in list)
+        foreach (KeyValuePair<ushort, PlayerData> x in list)
             added.Add(x.Key, x.Value with { });
     }
 
@@ -18,7 +18,7 @@ public class DynamicPlayerData : DynamicDictionary<OnlinePlayer, PlayerData, Dyn
             Serialize(serializer, ref removed);
     }
 
-    private static void Serialize(Serializer serializer, ref Dictionary<OnlinePlayer, PlayerData>? data) {
+    private static void Serialize(Serializer serializer, ref Dictionary<ushort, PlayerData>? data) {
         if (serializer.IsWriting)
             Write(serializer, data);
         if (serializer.IsReading)
@@ -26,17 +26,17 @@ public class DynamicPlayerData : DynamicDictionary<OnlinePlayer, PlayerData, Dyn
         // can a serializer be not reading and not writing or both reading and writing?????
     }
 
-    private static void Write(Serializer serializer, Dictionary<OnlinePlayer, PlayerData>? data) {
+    private static void Write(Serializer serializer, Dictionary<ushort, PlayerData>? data) {
         serializer.writer.Write((byte)(data?.Count ?? 0));
         if (data is null)
             return;
-        foreach (KeyValuePair<OnlinePlayer, PlayerData> x in data) {
-            serializer.writer.Write(x.Key.inLobbyId);
+        foreach (KeyValuePair<ushort, PlayerData> x in data) {
+            serializer.writer.Write(x.Key);
             x.Value.Write(serializer.writer);
         }
     }
 
-    private static void Read(Serializer serializer, out Dictionary<OnlinePlayer, PlayerData>? data) {
+    private static void Read(Serializer serializer, out Dictionary<ushort, PlayerData>? data) {
         byte count = serializer.reader.ReadByte();
         if (count == 0) {
             data = null;
@@ -44,14 +44,7 @@ public class DynamicPlayerData : DynamicDictionary<OnlinePlayer, PlayerData, Dyn
         }
         data = [];
         for (int i = 0; i < count; ++i) {
-            ushort id = serializer.reader.ReadUInt16();
-            PlayerData value = PlayerData.Read(serializer.reader);
-            OnlinePlayer? player = OnlineManager.lobby?.PlayerFromId(id);
-            if (player is null) {
-                Plugin.logger.LogError($"player not found {id}");
-                continue;
-            }
-            data.Add(player, value);
+            data.Add(serializer.reader.ReadUInt16(), PlayerData.Read(serializer.reader));
         }
     }
 }

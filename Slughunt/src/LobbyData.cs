@@ -46,7 +46,7 @@ public class LobbyData : OnlineResource.ResourceData {
     }
 
     public uint switchedStateAt { get; private set; }
-    private Dictionary<OnlinePlayer, PlayerData> playerData { get; } = [];
+    private Dictionary<ushort, PlayerData> playerData { get; } = [];
 
     public bool allowLateJoin => endless && (
         ruleset.hiderRespawn != Rules.OnRespawn.Block ||
@@ -56,16 +56,17 @@ public class LobbyData : OnlineResource.ResourceData {
     public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;
 
     public void CleanupOldPlayerData() {
-        foreach (OnlinePlayer player in playerData.Keys.Where(x => x.hasLeft).ToList()) {
-            playerData.Remove(player);
+        HashSet<ushort> currentPlayers = new(OnlineManager.players.Where(x => !x.hasLeft).Select(x => x.inLobbyId));
+        foreach (ushort id in playerData.Keys.Where(x => !currentPlayers.Contains(x)).ToList()) {
+            playerData.Remove(id);
         }
     }
 
     public PlayerData GetPlayerData(OnlinePlayer player) {
-        if (playerData.TryGetValue(player, out PlayerData? data))
+        if (playerData.TryGetValue(player.inLobbyId, out PlayerData? data))
             return data;
         data = new PlayerData();
-        playerData[player] = data;
+        playerData[player.inLobbyId] = data;
         return data;
     }
 

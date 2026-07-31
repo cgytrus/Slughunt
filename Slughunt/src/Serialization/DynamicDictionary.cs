@@ -51,11 +51,11 @@ public abstract class DynamicDictionary<TKey, TValue, TImp> : IDelta<TImp>, Seri
         };
         if (added is not null) {
             foreach (KeyValuePair<TKey, TValue> x in added)
-                next.added.Add(x.Key, x.Value);
+                next.added[x.Key] = x.Value;
         }
         if (delta.added is not null) {
             foreach (KeyValuePair<TKey, TValue> x in delta.added)
-                next.added.Add(x.Key, x.Value);
+                next.added[x.Key] = x.Value;
         }
         if (delta.removed is not null) {
             foreach (TKey x in delta.removed.Keys)
