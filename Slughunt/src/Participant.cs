@@ -1,4 +1,6 @@
-﻿namespace Slughunt;
+﻿using System.Diagnostics;
+
+namespace Slughunt;
 
 public readonly record struct Participant(PlayerRole role, int stun, bool dead, LobbyData lobbyData) {
     // is the player even actually participating in the game?
@@ -24,10 +26,7 @@ public readonly record struct Participant(PlayerRole role, int stun, bool dead, 
         if (hider.role != PlayerRole.Hider)
             return false;
 
-        // different lobbies??
-        // TODO: should i make this an assert?
-        if (hunter.lobbyData != hider.lobbyData)
-            return false;
+        Debug.Assert(hunter.lobbyData == hider.lobbyData);
 
         if (hunter.stun > 0 || hunter.dead)
             return false;
