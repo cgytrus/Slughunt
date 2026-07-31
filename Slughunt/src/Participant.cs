@@ -8,12 +8,13 @@ public readonly record struct Participant(PlayerRole role, int stun, bool dead, 
                 return false;
             if (!dead)
                 return true;
-            // death is permanent in non-endless
-            if (!lobbyData.endless)
+            if (!canRespawn)
                 return false;
             return true;
         }
     }
+
+    public bool canRespawn => lobbyData.endless && lobbyData.ruleset.GetRespawnRuleFor(role) != Rules.OnRespawn.Block;
 
     // can a catch actually take place in the current state of the hunter and the hider involved?
     public bool CanCatch(Participant hider) {
@@ -34,9 +35,9 @@ public readonly record struct Participant(PlayerRole role, int stun, bool dead, 
         if (!hider.dead)
             return true;
 
-        // death is permanent in non-endless, no point in catch
+        // permadeath, no point in catch
         // replace with participating checks if those actually get more complex at some point
-        if (!lobbyData.endless)
+        if (!canRespawn)
             return false;
 
         // if hider dies on catch but is already dead, no point in catch

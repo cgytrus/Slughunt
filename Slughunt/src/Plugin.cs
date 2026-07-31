@@ -445,9 +445,7 @@ public partial class Plugin : BaseUnityPlugin {
 
             // TODO: update the game over text
             // TODO: spectate
-            // no respawning in non endless
-            if (!gameMode.lobbyData.endless ||
-                gameMode.lobbyData.ruleset.GetRespawnRuleFor(gameMode.playerData.role) == Rules.OnRespawn.Block)
+            if (!gameMode.playerData.participant.canRespawn)
                 return;
 
             Respawn(self, gameMode.lobbyData.RandomShelter());
