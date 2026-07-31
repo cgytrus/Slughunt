@@ -15,36 +15,39 @@ public sealed record PlayerData {
         }
     }
 
+    private PlayerRole _role;
     public PlayerRole role {
-        get;
+        get => _role;
         set {
-            if (field == value)
+            if (_role == value)
                 return;
             changedStateAt = OnlineManager.lobby.owner.tick;
-            field = value;
+            _role = value;
         }
     }
 
+    private bool _dead;
     public bool dead {
-        get;
+        get => _dead;
         set {
-            if (field == value)
+            if (_dead == value)
                 return;
             changedStateAt = OnlineManager.lobby.owner.tick;
-            field = value;
+            _dead = value;
         }
     }
 
+    private uint _changedStateAt;
     public uint changedStateAt {
-        get;
+        get => _changedStateAt;
         private set {
             if (participating) {
                 if (role == PlayerRole.Hunter)
-                    timeAsHunter += value - field;
+                    timeAsHunter += value - _changedStateAt;
                 else if (role == PlayerRole.Hider)
-                    timeAsHider += value - field;
+                    timeAsHider += value - _changedStateAt;
             }
-            field = value;
+            _changedStateAt = value;
         }
     }
 
@@ -102,9 +105,9 @@ public sealed record PlayerData {
 
     public static PlayerData Read(BinaryReader reader) => new() {
         ready = reader.ReadBoolean(),
-        role = (PlayerRole)reader.ReadByte(),
-        dead = reader.ReadBoolean(),
-        changedStateAt = reader.ReadUInt32(),
+        _role = (PlayerRole)reader.ReadByte(),
+        _dead = reader.ReadBoolean(),
+        _changedStateAt = reader.ReadUInt32(),
         timeAsHunter = reader.ReadUInt32(),
         timeAsHider = reader.ReadUInt32(),
         caughtAsHunter = reader.ReadUInt32(),
