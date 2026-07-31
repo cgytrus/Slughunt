@@ -32,7 +32,7 @@ public readonly record struct Ruleset(
     Rules.OnNextRound nextRound
 ) {
     public static readonly Ruleset hideAndSeek = new(
-        Rules.OnCatch.Death, Rules.OnRespawn.Nothing,
+        Rules.OnCatch.Death, Rules.OnRespawn.Block,
         Rules.OnCatch.Nothing, Rules.OnRespawn.Nothing,
         Rules.OnNextRound.RandomSide
     );

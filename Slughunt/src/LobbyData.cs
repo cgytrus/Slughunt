@@ -48,6 +48,11 @@ public class LobbyData : OnlineResource.ResourceData {
     public uint switchedStateAt { get; private set; }
     private Dictionary<OnlinePlayer, PlayerData> playerData { get; } = [];
 
+    public bool allowLateJoin => endless && (
+        ruleset.hiderRespawn != Rules.OnRespawn.Block ||
+        ruleset.hunterRespawn != Rules.OnRespawn.Block
+    );
+
     public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;
 
     public void CleanupOldPlayerData() {

@@ -238,6 +238,15 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     public void AssignLateRole(PlayerData data) {
+        if (lobbyData.ruleset.hiderRespawn == Rules.OnRespawn.Block) {
+            data.role = PlayerRole.Hunter;
+            return;
+        }
+        if (lobbyData.ruleset.hiderRespawn == Rules.OnRespawn.Block) {
+            data.role = PlayerRole.Hider;
+            return;
+        }
+
         int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role == PlayerRole.Hunter);
         data.role = PickRole(data.role, hunterCount);
     }

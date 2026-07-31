@@ -518,7 +518,7 @@ public class SlughuntMenu : SmartMenu {
 
             _readyButton.inactive = !lobbyData.endless;
             _readyButton.menuLabel.text = Translate("ENTER");
-            _readyButton.Description = lobbyData.endless ? "" : Translate("Wait for the current round to finish");
+            _readyButton.Description = lobbyData.allowLateJoin ? "" : Translate("Wait for the current round to finish");
         }
     }
 
@@ -606,7 +606,7 @@ public class SlughuntMenu : SmartMenu {
     [RPCMethod]
     private static void SwitchReady(RPCEvent rpcEvent) {
         PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        data.ready = !data.ready && (lobbyData.endless || lobbyData.state == GameState.Lobby);
+        data.ready = !data.ready && (lobbyData.allowLateJoin || lobbyData.state == GameState.Lobby);
         if (data.ready && lobbyData.state != GameState.Lobby)
             gameMode.AssignLateRole(data);
         lobby.NewVersion();
