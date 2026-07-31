@@ -242,7 +242,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             data.role = PlayerRole.Hunter;
             return;
         }
-        if (lobbyData.ruleset.hiderRespawn == Rules.OnRespawn.Block) {
+        if (lobbyData.ruleset.hunterRespawn == Rules.OnRespawn.Block) {
             data.role = PlayerRole.Hider;
             return;
         }
