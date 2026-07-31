@@ -446,7 +446,8 @@ public partial class Plugin : BaseUnityPlugin {
             // TODO: update the game over text
             // TODO: spectate
             // no respawning in non endless
-            if (!gameMode.lobbyData.endless)
+            if (!gameMode.lobbyData.endless ||
+                gameMode.lobbyData.ruleset.GetRespawnRuleFor(gameMode.playerData.role) == Rules.OnRespawn.Block)
                 return;
 
             Respawn(self, gameMode.lobbyData.RandomShelter());
@@ -543,6 +544,7 @@ public partial class Plugin : BaseUnityPlugin {
         Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(playerData.role);
         switch (rule) {
             case Rules.OnRespawn.Nothing:
+            case Rules.OnRespawn.Block:
                 break;
             case Rules.OnRespawn.SwitchSide:
                 playerData.SwitchSide();

@@ -340,6 +340,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         //    OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
         //    return;
         //}
+        // implement nextRound here, RandomSide should set preferences to None, SwitchSide to opposite of current role
         //PrepareRound();
         //Plugin.Respawn(game, lobbyData.startingShelter);
     }

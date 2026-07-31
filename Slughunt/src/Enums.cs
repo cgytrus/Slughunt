@@ -3,8 +3,22 @@
 namespace Slughunt;
 
 public static class Rules {
-    public enum OnCatch { Nothing, Death, SwitchSide }
-    public enum OnRespawn { Nothing, SwitchSide }
+    public enum OnCatch {
+        Nothing,
+        Death,
+        [Description("Switch Side")] SwitchSide
+    }
+
+    public enum OnRespawn {
+        Nothing,
+        Block,
+        [Description("Switch Side")] SwitchSide
+    }
+
+    public enum OnNextRound {
+        [Description("Random Side")] RandomSide,
+        [Description("Switch Side")] SwitchSide
+    }
 }
 
 public enum PlayerRole : byte { None, PreferHunter, PreferHider, Hunter, Hider }
@@ -14,22 +28,26 @@ public enum TauntMode { Off, Sound, Radar, Room, Position }
 
 public readonly record struct Ruleset(
     Rules.OnCatch hiderCatch, Rules.OnRespawn hiderRespawn,
-    Rules.OnCatch hunterCatch, Rules.OnRespawn hunterRespawn
+    Rules.OnCatch hunterCatch, Rules.OnRespawn hunterRespawn,
+    Rules.OnNextRound nextRound
 ) {
-    public static readonly Ruleset manhunt =
-        new(Rules.OnCatch.Death, Rules.OnRespawn.Nothing, Rules.OnCatch.Nothing, Rules.OnRespawn.Nothing);
+    public static readonly Ruleset hideAndSeek = new(
+        Rules.OnCatch.Death, Rules.OnRespawn.Nothing,
+        Rules.OnCatch.Nothing, Rules.OnRespawn.Nothing,
+        Rules.OnNextRound.RandomSide
+    );
 
-    public static readonly Ruleset infection1 =
-        new(Rules.OnCatch.SwitchSide, Rules.OnRespawn.SwitchSide, Rules.OnCatch.Nothing, Rules.OnRespawn.Nothing);
+    public static readonly Ruleset infection = new(
+        Rules.OnCatch.SwitchSide, Rules.OnRespawn.SwitchSide,
+        Rules.OnCatch.Nothing, Rules.OnRespawn.Nothing,
+        Rules.OnNextRound.RandomSide
+    );
 
-    public static readonly Ruleset infection2 =
-        new(Rules.OnCatch.SwitchSide, Rules.OnRespawn.Nothing, Rules.OnCatch.Nothing, Rules.OnRespawn.Nothing);
-
-    public static readonly Ruleset tag1 =
-        new(Rules.OnCatch.SwitchSide, Rules.OnRespawn.Nothing, Rules.OnCatch.SwitchSide, Rules.OnRespawn.Nothing);
-
-    public static readonly Ruleset tag2 =
-        new(Rules.OnCatch.SwitchSide, Rules.OnRespawn.SwitchSide, Rules.OnCatch.SwitchSide, Rules.OnRespawn.Nothing);
+    public static readonly Ruleset tag = new(
+        Rules.OnCatch.SwitchSide, Rules.OnRespawn.Block,
+        Rules.OnCatch.SwitchSide, Rules.OnRespawn.Nothing,
+        Rules.OnNextRound.SwitchSide
+    );
 
     public Rules.OnCatch GetCatchRuleFor(PlayerRole role) => role switch {
         PlayerRole.Hunter => hunterCatch,
@@ -45,42 +63,38 @@ public readonly record struct Ruleset(
 
     public enum PresetName {
         [Description("Custom")] Custom,
-        [Description("Manhunt")] Manhunt,
-        [Description("Infection (Variant 1)")] Infection1,
-        [Description("Infection (Variant 2)")] Infection2,
-        [Description("Tag (Variant 1)")] Tag1,
-        [Description("Tag (Variant 2)")] Tag2
+        [Description("Hide and Seek")] HideAndSeek,
+        [Description("Infection")] Infection,
+        [Description("Tag")] Tag
     }
 
     public PresetName GetPresetName() =>
-        this == manhunt ? PresetName.Manhunt :
-        this == infection1 ? PresetName.Infection1 :
-        this == infection2 ? PresetName.Infection2 :
-        this == tag1 ? PresetName.Tag1 :
-        this == tag2 ? PresetName.Tag2 :
+        this == hideAndSeek ? PresetName.HideAndSeek :
+        this == infection ? PresetName.Infection :
+        this == tag ? PresetName.Tag :
         PresetName.Custom;
 
     public static Ruleset GetPreset(PresetName preset, Ruleset custom) => preset switch {
         PresetName.Custom => custom,
-        PresetName.Manhunt => manhunt,
-        PresetName.Infection1 => infection1,
-        PresetName.Infection2 => infection2,
-        PresetName.Tag1 => tag1,
-        PresetName.Tag2 => tag2,
+        PresetName.HideAndSeek => hideAndSeek,
+        PresetName.Infection => infection,
+        PresetName.Tag => tag,
         _ => default(Ruleset)
     };
 
     public static explicit operator byte(Ruleset x) => (byte)(
-        (byte)x.hiderCatch * 2 * 3 * 2 +
-        (byte)x.hiderRespawn * 2 * 3 +
-        (byte)x.hunterCatch * 2 +
-        (byte)x.hunterRespawn
+        (byte)x.hiderCatch * 2 * 3 * 3 * 3 +
+        (byte)x.hiderRespawn * 2 * 3 * 3 +
+        (byte)x.hunterCatch * 2 * 3 +
+        (byte)x.hunterRespawn * 2 +
+        (byte)x.nextRound
     );
 
     public static explicit operator Ruleset(byte x) => new(
-        (Rules.OnCatch)(x / 2 / 3 / 2 % 3),
-        (Rules.OnRespawn)(x / 2 / 3 % 2),
-        (Rules.OnCatch)(x / 2 % 3),
-        (Rules.OnRespawn)(x % 2)
+        (Rules.OnCatch)(x / 2 / 3 / 3 / 3 % 3),
+        (Rules.OnRespawn)(x / 2 / 3 / 3 % 3),
+        (Rules.OnCatch)(x / 2 / 3 % 3),
+        (Rules.OnRespawn)(x / 2 % 3),
+        (Rules.OnNextRound)(x % 2)
     );
 }

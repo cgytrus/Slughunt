@@ -37,6 +37,7 @@ public class SlughuntMenu : SmartMenu {
     private readonly OpResourceSelector2 _rulesetHiderRespawn;
     private readonly OpResourceSelector2 _rulesetHunterCatch;
     private readonly OpResourceSelector2 _rulesetHunterRespawn;
+    private readonly OpResourceSelector2 _rulesetNextRound;
     private readonly SimplerCheckbox _endless;
     private readonly OpResourceSelector2 _hunterCompass;
     private readonly OpResourceSelector2 _hiderCompass;
@@ -212,6 +213,7 @@ public class SlughuntMenu : SmartMenu {
             _rulesetHiderRespawn!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
             _rulesetHunterCatch!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
             _rulesetHunterRespawn!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
+            _rulesetNextRound!.value = ValueConverter.ConvertToString(lobbyData.ruleset.nextRound);
         };
         _ = new UIelementWrapper(tabWrapper, _rulesetPreset);
 
@@ -301,9 +303,36 @@ public class SlughuntMenu : SmartMenu {
         };
         _ = new UIelementWrapper(tabWrapper, _rulesetHunterRespawn);
 
+        AlignedMenuLabel rulesetNextRoundLabel = new(
+            this, mainPage,
+            "Next Round",
+            rulesetHunterLabel.pos - new Vector2(0f, 24f + 5f),
+            new Vector2(labelsWidth, 24f),
+            false
+        ) {
+            labelPosAlignment = FLabelAlignment.Left,
+            label = { alignment = FLabelAlignment.Left }
+        };
+        mainPage.subObjects.Add(rulesetNextRoundLabel);
+        _rulesetNextRound = new OpResourceSelector2(
+            new Configurable<Rules.OnNextRound>(lobbyData.ruleset.nextRound),
+            _rulesetHunterCatch.pos - new Vector2(0f, _rulesetHunterCatch.size.y + 5f),
+            _rulesetPreset.size.x
+        );
+        _rulesetNextRound.OnValueChanged += (_, value, _) => {
+            if (!lobby.isOwner)
+                return;
+            lobbyData.ruleset = lobbyData.ruleset with {
+                nextRound = ValueConverter.ConvertToValue<Rules.OnNextRound>(value)
+            };
+            lobby.NewVersion();
+            _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
+        };
+        _ = new UIelementWrapper(tabWrapper, _rulesetNextRound);
+
         _endless = new SimplerCheckbox(
             this, mainPage,
-            _rulesetHunterCatch.pos - new Vector2(0f, 24f + 5f),
+            _rulesetNextRound.pos - new Vector2(0f, 24f + 5f),
             labelsWidth, "Endless"
         );
         _endless.OnClick += value => {
@@ -512,9 +541,10 @@ public class SlughuntMenu : SmartMenu {
         _hideTime.greyedOut = false;
         _rulesetPreset.greyedOut = false;
         _rulesetHiderCatch.greyedOut = false;
-        _rulesetHiderRespawn.greyedOut = false;
+        _rulesetHiderRespawn.greyedOut = !lobbyData.endless;
         _rulesetHunterCatch.greyedOut = false;
-        _rulesetHunterRespawn.greyedOut = false;
+        _rulesetHunterRespawn.greyedOut = !lobbyData.endless;
+        _rulesetNextRound.greyedOut = !lobbyData.endless;
         _endless.inactive = false;
         _hunterCompass.greyedOut = false;
         _hiderCompass.greyedOut = false;
@@ -540,6 +570,7 @@ public class SlughuntMenu : SmartMenu {
         _rulesetHiderRespawn.greyedOut = true;
         _rulesetHunterCatch.greyedOut = true;
         _rulesetHunterRespawn.greyedOut = true;
+        _rulesetNextRound.greyedOut = true;
         _endless.inactive = true;
         _hunterCompass.greyedOut = true;
         _hiderCompass.greyedOut = true;
@@ -557,6 +588,7 @@ public class SlughuntMenu : SmartMenu {
         _rulesetHiderRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
         _rulesetHunterCatch.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
         _rulesetHunterRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
+        _rulesetNextRound.value = ValueConverter.ConvertToString(lobbyData.ruleset.nextRound);
         _endless.Checked = lobbyData.endless;
         _hunterCompass.value = ValueConverter.ConvertToString(lobbyData.hunterCompass);
         _hiderCompass.value = ValueConverter.ConvertToString(lobbyData.hiderCompass);

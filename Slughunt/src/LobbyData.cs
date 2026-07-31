@@ -28,7 +28,7 @@ public class LobbyData : OnlineResource.ResourceData {
     // gameplay settings
     public TimeSpan hideTime { get; set; } = TimeSpan.FromSeconds(6.0);
     public double hideTimeFrames => OnlineManager.instance.framesPerSecond * hideTime.TotalSeconds;
-    public Ruleset ruleset { get; set; } = Ruleset.manhunt;
+    public Ruleset ruleset { get; set; } = Ruleset.hideAndSeek;
     public bool endless { get; set; }
     public CompassMode hunterCompass { get; set; } = CompassMode.Off; // TODO
     public CompassMode hiderCompass { get; set; } = CompassMode.Off; // TODO
