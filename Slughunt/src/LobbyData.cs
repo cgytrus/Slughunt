@@ -55,11 +55,8 @@ public class LobbyData : OnlineResource.ResourceData {
 
     public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;
 
-    public void CleanupOldPlayerData() {
-        HashSet<ushort> currentPlayers = new(OnlineManager.players.Where(x => !x.hasLeft).Select(x => x.inLobbyId));
-        foreach (ushort id in playerData.Keys.Where(x => !currentPlayers.Contains(x)).ToList()) {
-            playerData.Remove(id);
-        }
+    public void RemovePlayerData(OnlinePlayer player) {
+        playerData.Remove(player.inLobbyId);
     }
 
     public PlayerData GetPlayerData(OnlinePlayer player) {

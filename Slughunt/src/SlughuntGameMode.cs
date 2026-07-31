@@ -64,6 +64,10 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         lobby.NewVersion();
     }
 
+    public override void PlayerLeftLobby(OnlinePlayer player) {
+        lobbyData.RemovePlayerData(player);
+    }
+
     public LobbyData lobbyData => lobby.GetData<LobbyData>();
     public PlayerData playerData => lobbyData.GetPlayerData(OnlineManager.mePlayer);
 
@@ -130,7 +134,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         else if (!TrySwitchToExpectedProcess()) {
             return;
         }
-        lobbyData.CleanupOldPlayerData();
         CleanupOldAvatars();
         if (OnlineManager.instance.manager.currentMainLoop is RainWorldGame game)
             GameTick(game);
