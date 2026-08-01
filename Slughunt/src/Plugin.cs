@@ -383,11 +383,9 @@ public partial class Plugin : BaseUnityPlugin {
 
         PlayerData hunterData = gameMode.lobbyData.GetPlayerData(hunter);
         PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
-
         if (hunterData.pendingCatch || hiderData.pendingCatch)
             return;
-
-        if (!hunterData.participant.CanCatch(hiderData.participant))
+        if (hunterData.role != PlayerRole.Hunter || hiderData.role != PlayerRole.Hider)
             return;
 
         hunterData.pendingCatch = true;

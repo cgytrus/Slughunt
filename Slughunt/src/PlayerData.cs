@@ -7,13 +7,7 @@ public sealed record PlayerData {
     public bool ready { get; set; }
 
     public bool participating => participant.participating;
-    public Participant participant {
-        get {
-            LobbyData lobbyData = OnlineManager.lobby.GetData<LobbyData>();
-            int stun = role == PlayerRole.Hunter ? (int)((long)lobbyData.hideTimeFrames - currentStateFor) : 0;
-            return new Participant(role, stun, dead, lobbyData);
-        }
-    }
+    public Participant participant => new(role, 0, dead, OnlineManager.lobby.GetData<LobbyData>());
 
     private PlayerRole _role;
     public PlayerRole role {
