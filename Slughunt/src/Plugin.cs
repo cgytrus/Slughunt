@@ -321,8 +321,8 @@ public partial class Plugin : BaseUnityPlugin {
         if (hiderObj is not Player hider)
             return;
 
-        Participant hunterPart = new(PlayerRole.Hunter, hunter.stun, hunter.dead, gameMode.lobbyData);
-        Participant hiderPart = new(PlayerRole.Hider, hider.stun, hider.dead, gameMode.lobbyData);
+        Participant hunterPart = new(PlayerRole.Hunter, hunter.stun, hunter.dead);
+        Participant hiderPart = new(PlayerRole.Hider, hider.stun, hider.dead);
         if (!hunterPart.CanCatch(hiderPart))
             return;
 

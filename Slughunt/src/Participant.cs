@@ -1,8 +1,10 @@
-﻿using System.Diagnostics;
+﻿using RainMeadow;
 
 namespace Slughunt;
 
-public readonly record struct Participant(PlayerRole role, int stun, bool dead, LobbyData lobbyData) {
+public readonly record struct Participant(PlayerRole role, int stun, bool dead) {
+    private static LobbyData lobbyData => OnlineManager.lobby.GetData<LobbyData>();
+
     // is the player even actually participating in the game?
     public bool participating {
         get {
@@ -25,8 +27,6 @@ public readonly record struct Participant(PlayerRole role, int stun, bool dead, 
             return false;
         if (hider.role != PlayerRole.Hider)
             return false;
-
-        Debug.Assert(hunter.lobbyData == hider.lobbyData);
 
         if (hunter.stun > 0 || hunter.dead)
             return false;

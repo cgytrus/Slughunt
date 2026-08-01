@@ -7,7 +7,7 @@ public sealed record PlayerData {
     public bool ready { get; set; }
 
     public bool participating => participant.participating;
-    public Participant participant => new(role, 0, dead, OnlineManager.lobby.GetData<LobbyData>());
+    public Participant participant => new(role, 0, dead);
 
     private PlayerRole _role;
     public PlayerRole role {
