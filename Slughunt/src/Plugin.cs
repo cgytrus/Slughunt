@@ -413,7 +413,6 @@ public partial class Plugin : BaseUnityPlugin {
                 break;
             case Rules.OnCatch.SwitchSide:
                 data.SwitchSide();
-                // TODO: separate hide time and catch stun time?
                 if (data.role == PlayerRole.Hunter)
                     stun = (int)(40 * gameMode.lobbyData.hideTime.TotalSeconds);
                 break;
@@ -528,7 +527,7 @@ public partial class Plugin : BaseUnityPlugin {
         }
 
         game.playedGameOverSound = false; // allow the game over sound to play
-        game.manager.fadeToBlack = 1.0f; // fade from black on respawn TODO: maybe figure out fade to black too
+        game.manager.fadeToBlack = 1.0f; // fade from black on respawn
     }
 
     private static void LoadWorld(RainWorldGame game, string regionName) {
