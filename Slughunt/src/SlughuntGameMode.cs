@@ -90,7 +90,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     public override AbstractCreature SpawnAvatar(RainWorldGame game, WorldCoordinate location) {
         AbstractCreature abstractCreature = new(game.world, StaticWorld.GetCreatureTemplate("Slugcat"), null, location, new EntityID(-1, 0));
         abstractCreature.state = new PlayerState(abstractCreature, 0, character, false);
-        game.world.GetAbstractRoom(abstractCreature.pos.room).AddEntity(abstractCreature);
+        abstractCreature.Room.AddEntity(abstractCreature);
         game.session.AddPlayer(abstractCreature);
         return abstractCreature;
     }
@@ -281,7 +281,12 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         ) {
             Plugin.Respawn(game, lobbyData.startingShelter);
         }
-        StunOrManageShortcut(game, false);
+        if (playerData.role == PlayerRole.Hunter)
+            game.FirstRealizedPlayer?.stun = (int)(40 * lobbyData.hideTime.TotalSeconds);
+        else if (playerData.role == PlayerRole.Hider)
+            game.FirstRealizedPlayer?.inShortcutVessel?.wait = 2;
+        game.FirstRealizedPlayer?.ChangeCollisionLayer(0);
+
         if (!lobby.isOwner)
             return;
         bool allHidersInShortcuts = true;
@@ -306,7 +311,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     }
 
     private void HideTick(RainWorldGame game) {
-        StunOrManageShortcut(game, true);
+        game.FirstRealizedPlayer?.ChangeCollisionLayer(1);
         if (!lobby.isOwner)
             return;
         if (lobby.owner.tick - lobbyData.switchedStateAt < (long)lobbyData.hideTimeFrames)
@@ -315,25 +320,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             lobbyData.GetPlayerData(player).ResetCurrentTimers();
         lobbyData.state = GameState.Hunt;
         lobby.NewVersion();
-    }
-
-    private void StunOrManageShortcut(RainWorldGame game, bool hide) {
-        Player? player = game.FirstRealizedPlayer;
-        if (player is null)
-            return;
-        switch (playerData.role) {
-            case PlayerRole.Hunter:
-                if (!hide)
-                    player.stun = (int)(40 * lobbyData.hideTime.TotalSeconds);
-                break;
-            case PlayerRole.Hider when player.inShortcut:
-                player.inShortcutVessel?.wait = hide ? 0 : 2;
-                break;
-            case PlayerRole.None:
-            case PlayerRole.PreferHunter:
-            default:
-                break;
-        }
     }
 
     private void HuntTick() {
