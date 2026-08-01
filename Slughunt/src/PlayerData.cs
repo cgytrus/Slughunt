@@ -15,7 +15,7 @@ public sealed record PlayerData {
         set {
             if (_role == value)
                 return;
-            changedStateAt = OnlineManager.lobby.owner.tick;
+            SaveTime();
             _role = value;
             if (value is not PlayerRole.Hunter and not PlayerRole.Hider)
                 pendingCatch = false;
@@ -28,39 +28,55 @@ public sealed record PlayerData {
         set {
             if (_dead == value)
                 return;
-            changedStateAt = OnlineManager.lobby.owner.tick;
+            SavePausedUnsavedTime();
             _dead = value;
         }
     }
 
-    private uint _changedStateAt;
-    public uint changedStateAt {
-        get => _changedStateAt;
-        private set {
-            if (participating) {
-                if (role == PlayerRole.Hunter)
-                    timeAsHunter += value - _changedStateAt;
-                else if (role == PlayerRole.Hider)
-                    timeAsHider += value - _changedStateAt;
-            }
-            _changedStateAt = value;
-        }
-    }
+    private uint _changedRoleAt;
+    private uint _changedParticipatingAt;
+    private uint _pausedUnsavedTimeAsCurrentRole;
 
-    public uint currentStateFor => OnlineManager.lobby.owner.tick - changedStateAt;
+    private uint unsavedPausedUnsavedTimeAsCurrentRole =>
+        participating ? 0 : OnlineManager.lobby.owner.tick - _changedParticipatingAt;
 
-    public bool pendingCatch { get; set; }
+    public uint unsavedTimeAsCurrentRole => OnlineManager.lobby.owner.tick - _changedRoleAt -
+        _pausedUnsavedTimeAsCurrentRole - unsavedPausedUnsavedTimeAsCurrentRole;
+
+    public long currentTotalTime => role switch {
+        PlayerRole.Hunter => totalTime - unsavedTimeAsCurrentRole,
+        PlayerRole.Hider => totalTime + unsavedTimeAsCurrentRole,
+        _ => totalTime
+    };
 
     public uint timeAsHunter { get; private set; }
     public uint timeAsHider { get; private set; }
     public uint caughtAsHunter { get; set; }
     public uint caughtAsHider { get; set; }
 
+    public bool pendingCatch { get; set; }
+
     public long totalScore => (long)caughtAsHunter - caughtAsHider;
     public long totalTime => (long)timeAsHider - timeAsHunter;
 
-    public void ResetCurrentTimers() {
-        _changedStateAt = OnlineManager.lobby.owner.tick;
+    public void ResetUnsavedTime() {
+        _changedRoleAt = OnlineManager.lobby.owner.tick;
+        _changedParticipatingAt = OnlineManager.lobby.owner.tick;
+        _pausedUnsavedTimeAsCurrentRole = 0;
+    }
+
+    private void SavePausedUnsavedTime() {
+        _pausedUnsavedTimeAsCurrentRole += unsavedPausedUnsavedTimeAsCurrentRole;
+        _changedParticipatingAt = OnlineManager.lobby.owner.tick;
+        _pausedUnsavedTimeAsCurrentRole = 0;
+    }
+
+    private void SaveTime() {
+        if (role == PlayerRole.Hunter)
+            timeAsHunter += unsavedTimeAsCurrentRole;
+        else if (role == PlayerRole.Hider)
+            timeAsHider += unsavedTimeAsCurrentRole;
+        ResetUnsavedTime();
     }
 
     public void SwitchSide() {
@@ -90,23 +106,27 @@ public sealed record PlayerData {
         writer.Write(ready);
         writer.Write((byte)role);
         writer.Write(dead);
-        writer.Write(changedStateAt);
-        writer.Write(pendingCatch);
+        writer.Write(_changedRoleAt);
+        writer.Write(_changedParticipatingAt);
+        writer.Write(_pausedUnsavedTimeAsCurrentRole);
         writer.Write(timeAsHunter);
         writer.Write(timeAsHider);
         writer.Write(caughtAsHunter);
         writer.Write(caughtAsHider);
+        writer.Write(pendingCatch);
     }
 
     public static PlayerData Read(BinaryReader reader) => new() {
         ready = reader.ReadBoolean(),
         _role = (PlayerRole)reader.ReadByte(),
         _dead = reader.ReadBoolean(),
-        _changedStateAt = reader.ReadUInt32(),
-        pendingCatch = reader.ReadBoolean(),
+        _changedRoleAt = reader.ReadUInt32(),
+        _changedParticipatingAt = reader.ReadUInt32(),
+        _pausedUnsavedTimeAsCurrentRole = reader.ReadUInt32(),
         timeAsHunter = reader.ReadUInt32(),
         timeAsHider = reader.ReadUInt32(),
         caughtAsHunter = reader.ReadUInt32(),
-        caughtAsHider = reader.ReadUInt32()
+        caughtAsHider = reader.ReadUInt32(),
+        pendingCatch = reader.ReadBoolean()
     };
 }

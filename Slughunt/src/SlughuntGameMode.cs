@@ -317,7 +317,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (lobby.owner.tick - lobbyData.switchedStateAt < (long)lobbyData.hideTimeFrames)
             return;
         foreach (OnlinePlayer player in OnlineManager.players)
-            lobbyData.GetPlayerData(player).ResetCurrentTimers();
+            lobbyData.GetPlayerData(player).ResetUnsavedTime();
         lobbyData.state = GameState.Hunt;
         lobby.NewVersion();
     }

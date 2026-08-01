@@ -63,8 +63,8 @@ public class SlughuntInfo : HudPart {
         }
         _scoreLabel.isVisible = true;
 
-        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.participating ? playerData.currentStateFor / fps : 0d);
-        TimeSpan totalTime = TimeSpan.FromSeconds(playerData.totalTime / fps) + (hunter ? -roleTime : roleTime);
+        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.unsavedTimeAsCurrentRole / fps);
+        TimeSpan totalTime = TimeSpan.FromSeconds(playerData.currentTotalTime / fps);
 
         _scoreLabel.text = $"""
             {(hunter ? "Hunting" : "Hiding")} for {FormatTime(roleTime)}
