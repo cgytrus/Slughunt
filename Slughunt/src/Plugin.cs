@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using BepInEx;
 using BepInEx.Logging;
 using HUD;
-using JetBrains.Annotations;
 using MonoMod.RuntimeDetour;
 using MoreSlugcats;
 using RainMeadow;
@@ -316,7 +315,7 @@ public partial class Plugin : BaseUnityPlugin {
     private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj, SlughuntGameMode gameMode) {
         if (gameMode.lobbyData.state != GameState.Hunt)
             return;
-        // TODO: maybe make it so you could play with scavengers or something lol, lol
+
         if (hunterObj is not Player hunter)
             return;
         if (hiderObj is not Player hider)
@@ -333,32 +332,41 @@ public partial class Plugin : BaseUnityPlugin {
         if (self is null)
             return;
 
+        PlayerRole selfRole;
+        OnlinePlayer? otherOnline;
+        PlayerRole otherRole;
+        Delegate rpc;
+
         if (self == hunter) {
-            if (gameMode.playerData.role != PlayerRole.Hunter)
-                return;
-            if (!TryGetOnlinePlayer(hider, out OnlinePlayer? hiderOnline))
-                return;
-            if (gameMode.lobbyData.GetPlayerData(hiderOnline).role != PlayerRole.Hider)
-                return;
-            gameMode.lobby.owner.InvokeOnceRPC(HostOnCatchAsHunter, hiderOnline);
+            selfRole = PlayerRole.Hunter;
+            otherOnline = hider.abstractPhysicalObject.GetOnlineObject()?.owner;
+            otherRole = PlayerRole.Hider;
+            rpc = HostOnCatchAsHunter;
         }
         else if (self == hider) {
-            if (gameMode.playerData.role != PlayerRole.Hider)
-                return;
-            if (!TryGetOnlinePlayer(hunter, out OnlinePlayer? hunterOnline))
-                return;
-            if (gameMode.lobbyData.GetPlayerData(hunterOnline).role != PlayerRole.Hunter)
-                return;
-            gameMode.lobby.owner.InvokeOnceRPC(HostOnCatchAsHider, hunterOnline);
+            selfRole = PlayerRole.Hider;
+            otherOnline = hunter.abstractPhysicalObject.GetOnlineObject()?.owner;
+            otherRole = PlayerRole.Hunter;
+            rpc = HostOnCatchAsHider;
         }
+        else {
+            return;
+        }
+
+        if (!CatchCheckPlayer(gameMode, OnlineManager.mePlayer, selfRole))
+            return;
+        if (!CatchCheckPlayer(gameMode, otherOnline, otherRole))
+            return;
+
+        gameMode.lobby.owner.InvokeOnceRPC(rpc, otherOnline);
     }
 
-    private static bool TryGetOnlinePlayer(Player player, [NotNullWhen(true)] out OnlinePlayer? online) {
-        online = null;
-        if (!player.abstractPhysicalObject.GetOnlineObject(out OnlinePhysicalObject? opo))
+    private static bool CatchCheckPlayer(SlughuntGameMode gameMode, [NotNullWhen(true)] OnlinePlayer? player,
+        PlayerRole role) {
+        if (player is null)
             return false;
-        online = opo?.owner;
-        return online is not null;
+        PlayerData data = gameMode.lobbyData.GetPlayerData(player);
+        return data.role == role && !data.pendingCatch;
     }
 
     [RPCMethod]
@@ -372,10 +380,18 @@ public partial class Plugin : BaseUnityPlugin {
     private static void HostOnCatch(OnlinePlayer hunter, OnlinePlayer hider) {
         if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
             return;
+
         PlayerData hunterData = gameMode.lobbyData.GetPlayerData(hunter);
         PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
+
+        if (hunterData.pendingCatch || hiderData.pendingCatch)
+            return;
+
         if (!hunterData.participant.CanCatch(hiderData.participant))
             return;
+
+        hunterData.pendingCatch = true;
+        hiderData.pendingCatch = true;
 
         hunterData.caughtAsHunter++;
         hiderData.caughtAsHider++;
@@ -407,11 +423,11 @@ public partial class Plugin : BaseUnityPlugin {
                 logger.LogError($"unknown rule? {rule}");
                 break;
         }
-        player.InvokeRPC(ClientOnCatchConfirm, die, stun);
+        player.InvokeRPC(PlayerOnCatchConfirm, die, stun);
     }
 
-    [RPCMethod, UsedImplicitly]
-    private static void ClientOnCatchConfirm(RPCEvent rpcEvent, bool die, int stun) {
+    [RPCMethod]
+    private static void PlayerOnCatchConfirm(RPCEvent rpcEvent, bool die, int stun) {
         if (OnlineManager.instance.manager.currentMainLoop is not RainWorldGame game)
             return;
         Player? player = game.FirstRealizedPlayer;
@@ -423,6 +439,15 @@ public partial class Plugin : BaseUnityPlugin {
             player.Stun(stun);
         // TODO: maybe play the sound for everyone in the room?
         player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
+        rpcEvent.from.InvokeRPC(HostOnCatchConfirm);
+    }
+
+    [RPCMethod]
+    private static void HostOnCatchConfirm(RPCEvent rpcEvent) {
+        if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            return;
+        gameMode.lobbyData.GetPlayerData(rpcEvent.from).pendingCatch = false;
+        gameMode.lobby.NewVersion();
     }
 
     private static void RespawnRule() {

@@ -23,6 +23,8 @@ public sealed record PlayerData {
                 return;
             changedStateAt = OnlineManager.lobby.owner.tick;
             _role = value;
+            if (value is not PlayerRole.Hunter and not PlayerRole.Hider)
+                pendingCatch = false;
         }
     }
 
@@ -52,6 +54,8 @@ public sealed record PlayerData {
     }
 
     public uint currentStateFor => OnlineManager.lobby.owner.tick - changedStateAt;
+
+    public bool pendingCatch { get; set; }
 
     public uint timeAsHunter { get; private set; }
     public uint timeAsHider { get; private set; }
@@ -93,6 +97,7 @@ public sealed record PlayerData {
         writer.Write((byte)role);
         writer.Write(dead);
         writer.Write(changedStateAt);
+        writer.Write(pendingCatch);
         writer.Write(timeAsHunter);
         writer.Write(timeAsHider);
         writer.Write(caughtAsHunter);
@@ -104,6 +109,7 @@ public sealed record PlayerData {
         _role = (PlayerRole)reader.ReadByte(),
         _dead = reader.ReadBoolean(),
         _changedStateAt = reader.ReadUInt32(),
+        pendingCatch = reader.ReadBoolean(),
         timeAsHunter = reader.ReadUInt32(),
         timeAsHider = reader.ReadUInt32(),
         caughtAsHunter = reader.ReadUInt32(),
