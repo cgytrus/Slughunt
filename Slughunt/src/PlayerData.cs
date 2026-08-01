@@ -62,11 +62,7 @@ public sealed record PlayerData {
     public long totalTime => (long)timeAsHider - timeAsHunter;
 
     public void ResetCurrentTimers() {
-        uint savedTimeAsHider = timeAsHider;
-        uint savedTimeAsHunter = timeAsHunter;
-        changedStateAt = OnlineManager.lobby.owner.tick;
-        timeAsHider = savedTimeAsHider;
-        timeAsHunter = savedTimeAsHunter;
+        _changedStateAt = OnlineManager.lobby.owner.tick;
     }
 
     public void SwitchSide() {
