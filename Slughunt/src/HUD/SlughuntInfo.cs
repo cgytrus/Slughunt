@@ -52,7 +52,7 @@ public class SlughuntInfo : HudPart {
                 break;
         }
 
-        if (!_scoreLabel.isVisible)
+        if (!_scoreLabel.isVisible || playerData.dead)
             return;
 
         TimeSpan roleTime = TimeSpan.FromSeconds(playerData.unsavedTime / fps);
