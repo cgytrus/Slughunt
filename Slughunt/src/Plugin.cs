@@ -192,11 +192,11 @@ public partial class Plugin : BaseUnityPlugin {
         };
     }
 
-    private static Texture2D? _tempDiscoverTexture;
     private static void UnlockMap() {
+        Texture2D? temp = null;
         _ = new Hook(
             typeof(Map).GetProperty(nameof(Map.discoverTexture))!.GetGetMethod(),
-            (Func<Map, Texture2D> orig, Map self) => SlughuntGameMode.IsIn() ? _tempDiscoverTexture : orig(self)
+            (Func<Map, Texture2D> orig, Map self) => SlughuntGameMode.IsIn() ? temp : orig(self)
         );
         On.HUD.Map.CreateDiscoveryTextureFromVisitedRooms += (orig, self) => {
             if (!SlughuntGameMode.IsIn()) {
@@ -205,15 +205,15 @@ public partial class Plugin : BaseUnityPlugin {
             }
             int width = (int)(self.mapTexture.width / self.DiscoverResolution);
             int height = (int)(self.mapTexture.height / self.DiscoverResolution);
-            if (_tempDiscoverTexture is null)
-                _tempDiscoverTexture = new Texture2D(width, height);
+            if (temp is null)
+                temp = new Texture2D(width, height);
             else
-                _tempDiscoverTexture.Resize(width, height);
-            Color32[] pixels = _tempDiscoverTexture.GetPixels32();
+                temp.Resize(width, height);
+            Color32[] pixels = temp.GetPixels32();
             for (int i = 0; i < pixels.Length; i++)
                 pixels[i] = new Color32(255, 0, 0, 255);
-            _tempDiscoverTexture.SetPixels32(pixels);
-            _tempDiscoverTexture.Apply();
+            temp.SetPixels32(pixels);
+            temp.Apply();
         };
         On.HUD.Map.DiscoverMap += (orig, self, texturePos) => {
             if (SlughuntGameMode.IsIn())
