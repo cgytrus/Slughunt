@@ -59,13 +59,6 @@ public sealed record PlayerData {
     public long totalScore => (long)caughtAsHunter - caughtAsHider;
     public long totalTime => (long)timeAsHider - timeAsHunter;
 
-    public void Reset() {
-        ready = false;
-        pendingCatch = false;
-        role = Rules.Role.none;
-        dead = false;
-    }
-
     public void ResetUnsavedTime() {
         _changedRoleAt = currentTick;
         _stoppedTimingAt = currentTick;

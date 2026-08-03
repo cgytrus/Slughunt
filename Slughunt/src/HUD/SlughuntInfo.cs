@@ -42,11 +42,11 @@ public class SlughuntInfo : HudPart {
             case Rules.GameState.Setup:
                 _stateLabel.text = "Waiting for hiders...";
                 _scoreLabel.isVisible = false;
-                return;
+                break;
             case Rules.GameState.Hide:
                 _stateLabel.text = $"Hide: {FormatTime(time - lobbyData.hideTime, "", "-")}";
                 _scoreLabel.isVisible = false;
-                return;
+                break;
             case Rules.GameState.Hunt:
                 _stateLabel.text = $"Hunt: {FormatTime(time)}";
                 _scoreLabel.isVisible = playerData.role is Rules.Role.Participant;

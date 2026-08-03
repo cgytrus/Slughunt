@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RainMeadow;
 
@@ -19,15 +20,14 @@ public static partial class Rules {
 
         public abstract void Enter(GameState from);
 
-        public abstract bool readyForNext { get; }
-        protected abstract GameState next { get; }
+        // can a catch actually take place in the current state of the hunter and the hider involved?
+        public virtual bool CanCatch(Creature hunter, Creature hider) => false;
 
-        public void GoToNextIfReady() {
-            if (!readyForNext)
-                return;
-            lobbyData.state = next;
-            OnlineManager.lobby.NewVersion();
-        }
+        public abstract void Join(PlayerData data);
+        public abstract void Leave(PlayerData data);
+
+        public abstract bool readyForNext { get; }
+        public abstract GameState next { get; }
 
         public sealed class InLobby : GameState {
             public override bool canEnterGame => false;
@@ -35,11 +35,14 @@ public static partial class Rules {
 
             public override void Enter(GameState from) {
                 foreach (PlayerData data in OnlineManager.players.Select(x => lobbyData.GetPlayerData(x)))
-                    data.Reset();
+                    from.Leave(data);
             }
 
+            public override void Join(PlayerData data) => data.ready = true;
+            public override void Leave(PlayerData data) => data.ready = false;
+
             public override bool readyForNext => canStartRound;
-            protected override GameState next => setup;
+            public override GameState next => setup;
         }
 
         public abstract class InGame : GameState {
@@ -49,9 +52,35 @@ public static partial class Rules {
                 lobbyData.ruleset.hunterRespawn != OnRespawn.Block
             );
 
-            public virtual bool canCatch => false;
-
             protected static RainWorldGame game => (RainWorldGame)OnlineManager.instance.manager.currentMainLoop;
+
+            public override void Join(PlayerData data) {
+                data.ready = lobbyData.endless && (
+                    lobbyData.ruleset.hiderRespawn != OnRespawn.Block ||
+                    lobbyData.ruleset.hunterRespawn != OnRespawn.Block
+                );
+                if (!data.ready)
+                    return;
+
+                if (lobbyData.ruleset.hiderRespawn == OnRespawn.Block) {
+                    data.role = Role.hunter;
+                    return;
+                }
+                if (lobbyData.ruleset.hunterRespawn == OnRespawn.Block) {
+                    data.role = Role.hider;
+                    return;
+                }
+
+                int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role is Role.Hunter);
+                data.role = data.role.AsPreference().PickParticipant(hunterCount);
+            }
+
+            public override void Leave(PlayerData data) {
+                data.ready = false;
+                data.pendingCatch = false;
+                data.role = Role.none;
+                data.dead = false;
+            }
 
             // unlike everything else here, called for every player instead of just the host
             public abstract void Tick();
@@ -61,8 +90,30 @@ public static partial class Rules {
             public override void Enter(GameState from) {
                 if (from is InGame)
                     ApplyNextRound();
+
                 lobbyData.startingShelter = lobbyData.RandomShelter();
-                JoinAllReady();
+
+                List<PlayerData> players = OnlineManager.players
+                    .Select(x => lobbyData.GetPlayerData(x))
+                    .Where(x => x.ready)
+                    .OrderBy(_ => RXRandom.Int())
+                    .ToList();
+                int hunterCount = 0;
+                foreach (PlayerData data in players.Where(x => x.role is Role.PreferHunter)) {
+                    data.role = data.role.AsPreference().PickParticipant(hunterCount);
+                    if (data.role is Role.Hunter)
+                        hunterCount++;
+                }
+                foreach (PlayerData data in players.Where(x => x.role is Role.None)) {
+                    data.role = data.role.AsPreference().PickParticipant(hunterCount);
+                    if (data.role is Role.Hunter)
+                        hunterCount++;
+                }
+                foreach (PlayerData data in players.Where(x => x.role is Role.PreferHider)) {
+                    data.role = data.role.AsPreference().PickParticipant(hunterCount);
+                    if (data.role is Role.Hunter)
+                        hunterCount++;
+                }
             }
 
             public override void Tick() {
@@ -70,9 +121,8 @@ public static partial class Rules {
                 string shelter = lobbyData.startingShelter;
 
                 bool inShelter = string.Equals(abstractPlayer.Room?.name, shelter, StringComparison.OrdinalIgnoreCase);
-                if (abstractPlayer.slatedForDeletion || abstractPlayer.state.dead || !inShelter) {
+                if (abstractPlayer.slatedForDeletion || abstractPlayer.state.dead || !inShelter)
                     Plugin.Respawn(game, shelter);
-                }
 
                 Player? player = game.FirstRealizedPlayer;
                 if (player is null)
@@ -107,7 +157,7 @@ public static partial class Rules {
                 }
             }
 
-            protected override GameState next => hide;
+            public override GameState next => hide;
         }
 
         public sealed class Hide : InGame {
@@ -120,16 +170,18 @@ public static partial class Rules {
             public override bool readyForNext =>
                 OnlineManager.lobby.owner.tick - lobbyData.switchedStateAt >= (long)lobbyData.hideTimeFrames;
 
-            protected override GameState next => hunt;
+            public override GameState next => hunt;
         }
 
         public sealed class Hunt : InGame {
-            public override bool canCatch => true;
-
             public override void Enter(GameState from) {
                 foreach (OnlinePlayer player in OnlineManager.players)
                     lobbyData.GetPlayerData(player).ResetUnsavedTime();
             }
+
+            public override bool CanCatch(Creature hunter, Creature hider) =>
+                Role.hunter.CanCatch(hunter.stun, hunter.dead) &&
+                Role.hider.CanCatch(hider.dead);
 
             public override void Tick() { }
 
@@ -150,7 +202,7 @@ public static partial class Rules {
                 }
             }
 
-            protected override GameState next => lobbyData.endless && canStartRound ? setup : inLobby;
+            public override GameState next => lobbyData.endless && canStartRound ? setup : inLobby;
         }
     }
 }

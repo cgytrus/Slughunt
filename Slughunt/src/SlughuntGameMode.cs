@@ -102,6 +102,13 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         RainMeadow.RainMeadow.creatureCustomizations.GetValue(creature, _ => data);
     }
 
+    public void NextStateIfReady() {
+        if (!lobbyData.state.readyForNext)
+            return;
+        lobbyData.state = lobbyData.state.next;
+        lobby.NewVersion();
+    }
+
     private void EnterGame() {
         if (!lobbyData.state.canEnterGame)
             return;
@@ -118,20 +125,20 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
 
     public override void LobbyTick(uint tick) {
         base.LobbyTick(tick);
-        ProcessManager manager = OnlineManager.instance.manager;
-        if (!TrySwitchToExpectedProcess(manager))
+        if (!TrySwitchToExpectedProcess())
             return;
         CleanupOldAvatars();
         if (lobbyData.state is not Rules.GameState.InGame state)
             return;
         state.Tick();
-        state.GoToNextIfReady();
+        NextStateIfReady();
     }
 
-    private bool TrySwitchToExpectedProcess(ProcessManager manager) {
+    private bool TrySwitchToExpectedProcess() {
+        ProcessManager manager = OnlineManager.instance.manager;
         if (manager.currentMainLoop is null)
             return false;
-        if (lobbyData.state is Rules.GameState.InGame == (manager.currentMainLoop?.ID == ProcessManager.ProcessID.Game))
+        if (lobbyData.state is Rules.GameState.InGame == (manager.currentMainLoop.ID == ProcessManager.ProcessID.Game))
             return true;
         if (manager.IsSwitchingProcesses() || manager.IsRunningAnyDialog || manager._processSwitchQueue.Count > 0)
             return false;
@@ -161,7 +168,8 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             lobby.NewVersion();
         }
         else {
-            if (lobbyData.state is Rules.GameState.InLobby)
+            // WantExit is specifically for when a player wants to exit while in-game
+            if (lobbyData.state is not Rules.GameState.InGame)
                 return;
             lobby.owner.InvokeOnceRPC(HostWantExit);
         }
@@ -170,10 +178,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     [RPCMethod]
     private static void HostWantExit(RPCEvent rpcEvent) {
         LobbyData lobbyData = OnlineManager.lobby.GetData<LobbyData>();
-        if (lobbyData.state is Rules.GameState.InLobby)
-            return;
-        PlayerData playerData = lobbyData.GetPlayerData(rpcEvent.from);
-        playerData.Reset();
+        lobbyData.state.Leave(lobbyData.GetPlayerData(rpcEvent.from));
         OnlineManager.lobby.NewVersion();
     }
 }

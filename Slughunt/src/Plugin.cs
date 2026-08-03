@@ -313,23 +313,15 @@ public partial class Plugin : BaseUnityPlugin {
     }
 
     private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj, SlughuntGameMode gameMode) {
-        if (gameMode.lobbyData.state is not Rules.GameState.InGame { canCatch: true })
-            return;
-
         if (hunterObj is not Player hunter)
             return;
         if (hiderObj is not Player hider)
             return;
 
-        if (!Rules.CanCatch(hunter, hider))
+        if (!gameMode.lobbyData.state.CanCatch(hunter, hider))
             return;
 
-        RainWorldGame game = hunter.room.game;
-
-        Player? self = game.FirstRealizedPlayer;
-        if (self is null)
-            return;
-
+        Player? self = hunter.room.game.FirstRealizedPlayer;
         Rules.Role selfRole;
         OnlinePlayer? otherOnline;
         Rules.Role otherRole;

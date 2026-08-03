@@ -4,11 +4,6 @@ using UnityEngine;
 namespace Slughunt;
 
 public static partial class Rules {
-    // can a catch actually take place in the current state of the hunter and the hider involved?
-    public static bool CanCatch(Creature hunter, Creature hider) =>
-        Role.hunter.CanCatch(hunter.stun, hunter.dead) &&
-        Role.hider.CanCatch(hider.dead);
-
     public abstract class Role : EnumClass<Role> {
         public static readonly None none = new();
         public static readonly PreferHunter preferHunter = new();

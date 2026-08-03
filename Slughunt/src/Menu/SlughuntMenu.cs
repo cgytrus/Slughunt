@@ -75,7 +75,7 @@ public class SlughuntMenu : SmartMenu {
             new Vector2(1056f - _readyButton.size.x - 10f, 50f), new Vector2(110f, 30f),
             Translate("START")
         );
-        _startButton.OnClick += _ => lobbyData.state.GoToNextIfReady();
+        _startButton.OnClick += _ => gameMode.NextStateIfReady();
         _ = new UIelementWrapper(tabWrapper, _startButton);
 
         _forceStartButton = new OpHoldButton(
@@ -84,7 +84,7 @@ public class SlughuntMenu : SmartMenu {
         ) {
             description = "Only ready players will enter the game"
         };
-        _forceStartButton.OnPressDone += _ => lobbyData.state.GoToNextIfReady();
+        _forceStartButton.OnPressDone += _ => gameMode.NextStateIfReady();
         _ = new UIelementWrapper(tabWrapper, _forceStartButton);
 
         _players = new PlayerCards(this, mainPage, new Vector2(50f, 680f - 24f));
@@ -500,14 +500,13 @@ public class SlughuntMenu : SmartMenu {
         else
             OtherUpdate();
 
-        _preferenceButton.menuLabel.text = Translate(playerData.role switch {
-            Rules.Role.None => "PREFER: NEITHER",
-            Rules.Role.PreferHunter => "PREFER: HUNTER",
-            Rules.Role.PreferHider => "PREFER: HIDER",
-            _ => "what"
-        });
-
         if (lobbyData.state is Rules.GameState.InLobby) {
+            _preferenceButton.menuLabel.text = Translate(playerData.role switch {
+                Rules.Role.None => "PREFER: NEITHER",
+                Rules.Role.PreferHunter => "PREFER: HUNTER",
+                Rules.Role.PreferHider => "PREFER: HIDER",
+                _ => "what"
+            });
             _preferenceButton.inactive = lobbyData is { allowHunterPreference: false, allowHiderPreference: false };
 
             _readyButton.inactive = false;
@@ -605,9 +604,10 @@ public class SlughuntMenu : SmartMenu {
     [RPCMethod]
     private static void SwitchReady(RPCEvent rpcEvent) {
         PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        data.ready = !data.ready && lobbyData.state.canJoin;
-        if (data.ready && lobbyData.state is Rules.GameState.InGame)
-            Rules.JoinLate(data);
+        if (data.ready)
+            lobbyData.state.Leave(data);
+        else
+            lobbyData.state.Join(data);
         lobby.NewVersion();
     }
 

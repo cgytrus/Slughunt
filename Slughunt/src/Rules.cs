@@ -102,42 +102,4 @@ public static partial class Rules {
                 break;
         }
     }
-
-    public static void JoinAllReady() {
-        List<PlayerData> players = OnlineManager.players
-            .Select(x => lobbyData.GetPlayerData(x))
-            .Where(x => x.ready)
-            .OrderBy(_ => RXRandom.Int())
-            .ToList();
-        int hunterCount = 0;
-        foreach (PlayerData data in players.Where(x => x.role is Role.PreferHunter)) {
-            data.role = data.role.AsPreference().PickParticipant(hunterCount);
-            if (data.role is Role.Hunter)
-                hunterCount++;
-        }
-        foreach (PlayerData data in players.Where(x => x.role is Role.None)) {
-            data.role = data.role.AsPreference().PickParticipant(hunterCount);
-            if (data.role is Role.Hunter)
-                hunterCount++;
-        }
-        foreach (PlayerData data in players.Where(x => x.role is Role.PreferHider)) {
-            data.role = data.role.AsPreference().PickParticipant(hunterCount);
-            if (data.role is Role.Hunter)
-                hunterCount++;
-        }
-    }
-
-    public static void JoinLate(PlayerData data) {
-        if (lobbyData.ruleset.hiderRespawn == OnRespawn.Block) {
-            data.role = Role.hunter;
-            return;
-        }
-        if (lobbyData.ruleset.hunterRespawn == OnRespawn.Block) {
-            data.role = Role.hider;
-            return;
-        }
-
-        int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role is Role.Hunter);
-        data.role = data.role.AsPreference().PickParticipant(hunterCount);
-    }
 }
