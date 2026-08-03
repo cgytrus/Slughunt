@@ -11,43 +11,72 @@ public static class RPC {
     private static PlayerData fromData => lobbyData.GetPlayerData(from);
 
     [RPCMethod]
-    public static void OnCatchAsHunter(OnlinePlayer hider) => OnCatch(from, hider);
+    public static void OnCatchOrKillAsAttacker(OnlinePlayer victim, bool isCatch, bool kill) =>
+        OnCatchOrKill(from, victim, isCatch, kill);
 
     [RPCMethod]
-    public static void OnCatchAsHider(OnlinePlayer hunter) => OnCatch(hunter, from);
+    public static void OnCatchOrKillAsVictim(OnlinePlayer attacker, bool isCatch, bool kill) =>
+        OnCatchOrKill(attacker, from, isCatch, kill);
 
-    private static void OnCatch(OnlinePlayer hunter, OnlinePlayer hider) {
-        if (OnCatchConfirmPending(hunter) || OnCatchConfirmPending(hider))
-            return;
+    private static void OnCatchOrKill(OnlinePlayer attacker, OnlinePlayer victim, bool isCatch, bool kill) {
+        if (OnCatchOrKillConfirmPending(attacker) || OnCatchOrKillConfirmPending(victim)) {
+            isCatch = false;
+        }
 
-        PlayerData hunterData = lobbyData.GetPlayerData(hunter);
-        PlayerData hiderData = lobbyData.GetPlayerData(hider);
-        if (hunterData.role is not Rules.Role.Hunter || hiderData.role is not Rules.Role.Hider)
-            return;
+        PlayerData attackerData = lobbyData.GetPlayerData(attacker);
+        PlayerData victimData = lobbyData.GetPlayerData(victim);
+        if (attackerData.role is not Rules.Role.Hunter || victimData.role is not Rules.Role.Hider) {
+            isCatch = false;
+        }
 
-        Rules.OnCatch(hunterData, out int hunterStun);
-        Rules.OnCatch(hiderData, out int hiderStun);
-        lobby.NewVersion();
+        if (isCatch) {
+            victimData.dead = victimData.dead || kill;
 
-        hunter.InvokeRPC(OnCatchConfirm, hunterData.dead, hunterStun);
-        hider.InvokeRPC(OnCatchConfirm, hiderData.dead, hiderStun);
+            Rules.OnCatch(attackerData, out int attackerStun);
+            Rules.OnCatch(victimData, out int victimStun);
+            lobby.NewVersion();
+
+            attacker.InvokeRPC(OnCatchOrKillConfirm, victim, attackerData.dead, attackerStun, true);
+            victim.InvokeRPC(OnCatchOrKillConfirm, attacker, victimData.dead, victimStun, true);
+        }
+        else if (kill) {
+            Rules.OnDeath(victimData);
+            lobby.NewVersion();
+
+            victim.InvokeRPC(OnCatchOrKillConfirm, attacker, victimData.dead, 0, false);
+        }
     }
 
     [RPCMethod(runDeferred = true)]
-    private static void OnCatchConfirm(bool die, int stun) {
+    private static void OnCatchOrKillConfirm(OnlinePlayer otherOnline, bool die, int stun, bool sound) {
         Player? player = (OnlineManager.instance.manager.currentMainLoop as RainWorldGame)?.FirstRealizedPlayer;
         if (player is null)
             return;
-        if (die)
+
+        if (die) {
+            if (
+                OnlineManager.lobby.playerAvatars
+                    .FirstOrDefault(x => x.Key == otherOnline)
+                    .Value?
+                    .FindEntity(true) is OnlinePhysicalObject { apo: AbstractCreature other }
+            ) {
+                player.SetKillTag(other);
+            }
             player.Die();
-        if (stun > 0)
+        }
+
+        if (stun > 0) {
             player.Stun(stun);
-        // TODO: maybe play the sound for everyone in the room?
-        player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
+        }
+
+        if (sound) {
+            // TODO: maybe play the sound for everyone in the room?
+            player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
+        }
     }
 
-    private static bool OnCatchConfirmPending(OnlinePlayer player) => player.OutgoingEvents.Any(x =>
-        x is RPCEvent rpc && rpc.handler.method == ((Delegate)OnCatchConfirm).Method
+    private static bool OnCatchOrKillConfirmPending(OnlinePlayer player) => player.OutgoingEvents.Any(x =>
+        x is RPCEvent rpc && rpc.handler.method == ((Delegate)OnCatchOrKillConfirm).Method
     );
 
     [RPCMethod]

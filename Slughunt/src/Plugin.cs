@@ -59,8 +59,9 @@ public partial class Plugin : BaseUnityPlugin {
         RoleColors();
         CustomHud();
         CustomSpawn();
-        CatchRule();
-        DeathRule();
+        OnCatch();
+        OnDeath();
+        OnRespawn();
     }
 
     private static void DisableOverseers() {
@@ -301,13 +302,13 @@ public partial class Plugin : BaseUnityPlugin {
         };
     }
 
-    private static void CatchRule() {
+    private static void OnCatch() {
         On.Player.Collide += (orig, self, otherObject, myChunk, otherChunk) => {
             orig(self, otherObject, myChunk, otherChunk);
             if (!SlughuntGameMode.IsIn())
                 return;
-            OnCatch(self, otherObject);
-            OnCatch(otherObject, self);
+            TryCatchOrKill(self.abstractPhysicalObject, otherObject, false);
+            TryCatchOrKill(otherObject.abstractPhysicalObject, self, false);
         };
         // TODO: maybe could make it so that its not only rocks?
         On.Rock.HitSomething += (orig, self, result, eu) => {
@@ -315,54 +316,12 @@ public partial class Plugin : BaseUnityPlugin {
                 return false;
             if (!SlughuntGameMode.IsIn())
                 return true;
-            OnCatch(self.thrownBy, result.obj);
+            TryCatchOrKill(self.thrownBy.abstractPhysicalObject, result.obj, false);
             return true;
         };
     }
 
-    private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj) {
-        if (hunterObj is not Player hunter)
-            return;
-        if (hiderObj is not Player hider)
-            return;
-
-        if (!lobbyData.state.CanCatch(hunter, hider))
-            return;
-
-        Player? self = hunter.room.game.FirstRealizedPlayer;
-        Rules.Role selfRole;
-        OnlinePlayer? otherOnline;
-        Rules.Role otherRole;
-        Delegate rpc;
-
-        if (self == hunter) {
-            selfRole = Rules.Role.hunter;
-            otherOnline = hider.abstractPhysicalObject.GetOnlineObject()?.owner;
-            otherRole = Rules.Role.hider;
-            rpc = RPC.OnCatchAsHunter;
-        }
-        else if (self == hider) {
-            selfRole = Rules.Role.hider;
-            otherOnline = hunter.abstractPhysicalObject.GetOnlineObject()?.owner;
-            otherRole = Rules.Role.hunter;
-            rpc = RPC.OnCatchAsHider;
-        }
-        else {
-            return;
-        }
-
-        if (otherOnline is null)
-            return;
-
-        if (playerData.role != selfRole)
-            return;
-        if (lobbyData.GetPlayerData(otherOnline).role != otherRole)
-            return;
-
-        lobby.owner.InvokeOnceRPC(rpc, otherOnline);
-    }
-
-    private static void DeathRule() {
+    private static void OnDeath() {
         On.Player.Die += (orig, self) => {
             bool alreadyWasDead = self.dead;
             orig(self);
@@ -372,8 +331,46 @@ public partial class Plugin : BaseUnityPlugin {
                 return;
             if (!SlughuntGameMode.IsIn())
                 return;
-            lobby.owner.InvokeRPC(RPC.OnDeath);
+            if (!TryCatchOrKill(self.killTag, self, true))
+                lobby.owner.InvokeRPC(RPC.OnDeath);
         };
+    }
+
+    private static bool TryCatchOrKill(AbstractPhysicalObject? attackerObj, PhysicalObject victimObj, bool kill) {
+        Player? attacker = attackerObj?.realizedObject as Player;
+        if (victimObj is not Player victim)
+            return false;
+
+        Player? self = victim.room.game.FirstRealizedPlayer;
+        OnlinePlayer? otherOnline;
+        Delegate rpc;
+
+        if (self == attacker) {
+            otherOnline = victim.abstractPhysicalObject.GetOnlineObject()?.owner;
+            rpc = RPC.OnCatchOrKillAsAttacker;
+        }
+        else if (self == victim) {
+            otherOnline = attackerObj?.GetOnlineObject()?.owner;
+            rpc = RPC.OnCatchOrKillAsVictim;
+        }
+        else {
+            return false;
+        }
+
+        if (otherOnline is null)
+            return false;
+
+        bool isCatch = attacker is not null && lobbyData.state.CanCatch(attacker, victim);
+
+        if (!isCatch && !kill)
+            return false;
+
+        lobby.owner.InvokeOnceRPC(rpc, otherOnline, isCatch, kill);
+
+        return true;
+    }
+
+    private static void OnRespawn() {
         On.RainWorldGame.GoToDeathScreen += (orig, self) => {
             if (!SlughuntGameMode.IsIn()) {
                 orig(self);
