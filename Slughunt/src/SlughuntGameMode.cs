@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using RainMeadow;
 using Slughunt.Menu;
 
@@ -15,16 +14,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         gamemodes[type] = typeof(SlughuntGameMode);
         OnlineGameModeType.descriptions[type] = "slughunt";
         //RegisterType(type, typeof(SlughuntGameMode), "slughunt");
-    }
-
-    // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
-    public static bool TryGet([NotNullWhen(true)] out SlughuntGameMode? gameMode) {
-        if (OnlineManager.lobby?.gameMode is not SlughuntGameMode self) {
-            gameMode = null;
-            return false;
-        }
-        gameMode = self;
-        return true;
     }
 
     // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
@@ -60,17 +49,13 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         lobbyData.RemovePlayerData(player);
     }
 
-    public LobbyData lobbyData => lobby.GetData<LobbyData>();
-    public PlayerData playerData => lobbyData.GetPlayerData(OnlineManager.mePlayer);
-
-    public SlugcatStats.Name character => lobbyData.campaign;
-    public SlugcatStats.Timeline timeline => SlugcatStats.SlugcatToTimeline(lobbyData.campaign);
+    private LobbyData lobbyData => lobby.GetData<LobbyData>();
 
     public SlugcatCustomization avatarSettings { get; } = new();
 
     public override SlugcatStats.Name GetStorySessionPlayer(RainWorldGame game) => save;
-    public override SlugcatStats.Name LoadWorldAs(RainWorldGame game) => character;
-    public override SlugcatStats.Timeline LoadWorldIn(RainWorldGame game) => timeline;
+    public override SlugcatStats.Name LoadWorldAs(RainWorldGame game) => lobbyData.character;
+    public override SlugcatStats.Timeline LoadWorldIn(RainWorldGame game) => lobbyData.timeline;
 
     public override void ResourceAvailable(OnlineResource resource) {
         base.ResourceAvailable(resource);
@@ -81,7 +66,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
 
     public override AbstractCreature SpawnAvatar(RainWorldGame game, WorldCoordinate location) {
         AbstractCreature abstractCreature = new(game.world, StaticWorld.GetCreatureTemplate("Slugcat"), null, location, new EntityID(-1, 0));
-        abstractCreature.state = new PlayerState(abstractCreature, 0, character, false);
+        abstractCreature.state = new PlayerState(abstractCreature, 0, lobbyData.character, false);
         abstractCreature.Room.AddEntity(abstractCreature);
         game.session.AddPlayer(abstractCreature);
         return abstractCreature;
@@ -90,7 +75,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
     public override void ConfigureAvatar(OnlineCreature onlineCreature) {
         onlineCreature.AddData(avatarSettings);
         avatarSettings.playerIndex = 0;
-        avatarSettings.playingAs = character;
+        avatarSettings.playingAs = lobbyData.character;
         avatarSettings.nickname = OnlineManager.mePlayer.id.name;
         avatarSettings.fakePup = false;
         avatarSettings.overlaySkin = AvatarData.ConfigureOverlay(onlineCreature);

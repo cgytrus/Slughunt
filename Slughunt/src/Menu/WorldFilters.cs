@@ -187,9 +187,9 @@ public class WorldFilters : RectangularMenuObject {
 
     public void UpdateRegions() {
         _regionSelector.SetItems(
-            Region.GetFullRegionOrder(gameMode.timeline)
+            Region.GetFullRegionOrder(lobbyData.timeline)
                 .Select((x, i) => {
-                        string fullName = $"{Region.GetRegionFullName(x, gameMode.character)} ({x})";
+                        string fullName = $"{Region.GetRegionFullName(x, lobbyData.character)} ({x})";
                         return new ListItem(x, fullName, i) {
                             desc = fullName
                         };
@@ -213,7 +213,7 @@ public class WorldFilters : RectangularMenuObject {
         _shortcuts.Clear();
 
         WorldLoader loader = new(
-            null, gameMode.character, gameMode.timeline,
+            null, lobbyData.character, lobbyData.timeline,
             false, region, null,
             menu.manager.rainWorld.setup,
             WorldLoader.LoadingContext.FASTTRAVEL

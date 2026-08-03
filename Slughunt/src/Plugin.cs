@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using BepInEx;
 using BepInEx.Logging;
 using HUD;
@@ -16,10 +15,13 @@ namespace Slughunt;
 [BepInDependency("henpemaz.rainmeadow")]
 public partial class Plugin : BaseUnityPlugin {
     private static Plugin? _instance;
+    private Plugin() => _instance = this;
 
     public static ManualLogSource logger => _instance!.Logger;
 
-    private Plugin() => _instance = this;
+    private static Lobby lobby => OnlineManager.lobby;
+    private static LobbyData lobbyData => lobby.GetData<LobbyData>();
+    private static PlayerData playerData => lobbyData.GetPlayerData(OnlineManager.mePlayer);
 
     private void Awake() {
         SlughuntGameMode.Register();
@@ -144,7 +146,7 @@ public partial class Plugin : BaseUnityPlugin {
 
     private static void DisableCreatures() {
         On.WorldLoader.FindingCreatures += (orig, self) => {
-            if (SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode) && !gameMode.lobbyData.spawnCreatures)
+            if (SlughuntGameMode.IsIn() && !lobbyData.spawnCreatures)
                 return;
             orig(self);
         };
@@ -154,9 +156,9 @@ public partial class Plugin : BaseUnityPlugin {
         On.WorldLoader.ctor_RainWorldGame_Name_Timeline_bool_string_Region_SetupValues +=
             (orig, self, game, playerCharacter, timelinePosition, singleRoomWorld, worldName, region, setupValues) => {
                 orig(self, game, playerCharacter, timelinePosition, singleRoomWorld, worldName, region, setupValues);
-                if (game is null || !SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+                if (game is null || !SlughuntGameMode.IsIn())
                     return;
-                foreach ((string a, string b) in gameMode.lobbyData.lockedShortcuts) {
+                foreach ((string a, string b) in lobbyData.lockedShortcuts) {
                     self.ConditionalLinkList.Add(new WorldLoader.ConditionalLink(a, b, "DISCONNECTED"));
                     self.ConditionalLinkList.Add(new WorldLoader.ConditionalLink(b, a, "DISCONNECTED"));
                 }
@@ -166,10 +168,10 @@ public partial class Plugin : BaseUnityPlugin {
     private static void UnlockGates() {
         On.RegionGate.customKarmaGateRequirements += (orig, self) => {
             orig(self);
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            if (!SlughuntGameMode.IsIn())
                 return;
             self.room.world.regionState.gatesPassedThrough[self.room.abstractRoom.gateIndex] = false;
-            self.unlocked = !gameMode.lobbyData.lockedGates.Contains(self.room.abstractRoom.name);
+            self.unlocked = !lobbyData.lockedGates.Contains(self.room.abstractRoom.name);
             self.karmaRequirements[0] = self.unlocked ?
                 RegionGate.GateRequirement.OneKarma :
                 RegionGate.GateRequirement.DemoLock;
@@ -240,14 +242,14 @@ public partial class Plugin : BaseUnityPlugin {
     private static void RoleColors() {
         On.PlayerGraphics.DrawSprites += (orig, self, sLeaser, rCam, timeStacker, camPos) => {
             if (
-                !SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode) ||
+                !SlughuntGameMode.IsIn() ||
                 !self.player.abstractPhysicalObject.GetOnlineObject(out OnlinePhysicalObject? opo) ||
                 opo?.owner is null
             ) {
                 orig(self, sLeaser, rCam, timeStacker, camPos);
                 return;
             }
-            PlayerData data = gameMode.lobbyData.GetPlayerData(opo.owner);
+            PlayerData data = lobbyData.GetPlayerData(opo.owner);
             if (data.role is not Rules.Role.Hunter) {
                 self.markAlpha = 0.0f;
                 orig(self, sLeaser, rCam, timeStacker, camPos);
@@ -268,10 +270,10 @@ public partial class Plugin : BaseUnityPlugin {
         };
         On.HUD.KarmaMeter.Update += (orig, self) => {
             orig(self);
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            if (!SlughuntGameMode.IsIn())
                 return;
             self.UpdateGraphic(
-                gameMode.playerData.role switch {
+                playerData.role switch {
                     Rules.Role.Hunter => 0,
                     Rules.Role.Hider => 4,
                     _ => 9
@@ -290,41 +292,41 @@ public partial class Plugin : BaseUnityPlugin {
         On.SaveState.setDenPosition += (orig, self) => {
             if (
                 self.saveStateNumber != SlughuntGameMode.save ||
-                !SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode)
+                !SlughuntGameMode.IsIn()
             ) {
                 orig(self);
                 return;
             }
-            self.denPosition = gameMode.lobbyData.startingShelter;
+            self.denPosition = lobbyData.startingShelter;
         };
     }
 
     private static void CatchRule() {
         On.Player.Collide += (orig, self, otherObject, myChunk, otherChunk) => {
             orig(self, otherObject, myChunk, otherChunk);
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            if (!SlughuntGameMode.IsIn())
                 return;
-            OnCatch(self, otherObject, gameMode);
-            OnCatch(otherObject, self, gameMode);
+            OnCatch(self, otherObject);
+            OnCatch(otherObject, self);
         };
         // TODO: maybe could make it so that its not only rocks?
         On.Rock.HitSomething += (orig, self, result, eu) => {
             if (!orig(self, result, eu))
                 return false;
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            if (!SlughuntGameMode.IsIn())
                 return true;
-            OnCatch(self.thrownBy, result.obj, gameMode);
+            OnCatch(self.thrownBy, result.obj);
             return true;
         };
     }
 
-    private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj, SlughuntGameMode gameMode) {
+    private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj) {
         if (hunterObj is not Player hunter)
             return;
         if (hiderObj is not Player hider)
             return;
 
-        if (!gameMode.lobbyData.state.CanCatch(hunter, hider))
+        if (!lobbyData.state.CanCatch(hunter, hider))
             return;
 
         Player? self = hunter.room.game.FirstRealizedPlayer;
@@ -352,12 +354,12 @@ public partial class Plugin : BaseUnityPlugin {
         if (otherOnline is null)
             return;
 
-        if (gameMode.playerData.role != selfRole)
+        if (playerData.role != selfRole)
             return;
-        if (gameMode.lobbyData.GetPlayerData(otherOnline).role != otherRole)
+        if (lobbyData.GetPlayerData(otherOnline).role != otherRole)
             return;
 
-        gameMode.lobby.owner.InvokeOnceRPC(rpc, otherOnline);
+        lobby.owner.InvokeOnceRPC(rpc, otherOnline);
     }
 
     private static void RespawnRule() {
@@ -368,25 +370,25 @@ public partial class Plugin : BaseUnityPlugin {
                 return;
             if (alreadyWasDead)
                 return;
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
+            if (!SlughuntGameMode.IsIn())
                 return;
-            gameMode.lobby.owner.InvokeRPC(RPC.OnDeath);
+            lobby.owner.InvokeRPC(RPC.OnDeath);
         };
         On.RainWorldGame.GoToDeathScreen += (orig, self) => {
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode)) {
+            if (!SlughuntGameMode.IsIn()) {
                 orig(self);
                 return;
             }
 
             // TODO: update the game over text
             // TODO: spectate
-            if (!gameMode.playerData.role.canRespawn)
+            if (!playerData.role.canRespawn)
                 return;
 
-            Respawn(self, gameMode.lobbyData.RandomShelter());
+            Respawn(self, lobbyData.RandomShelter());
             self.lastPauseButton = true; // prevent pause
 
-            gameMode.lobby.owner.InvokeRPC(RPC.OnRespawn);
+            lobby.owner.InvokeRPC(RPC.OnRespawn);
         };
     }
 

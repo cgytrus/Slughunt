@@ -7,9 +7,8 @@ namespace Slughunt.HUD;
 
 public class SlughuntInfo : HudPart {
     private static Lobby lobby => OnlineManager.lobby;
-    private static SlughuntGameMode gameMode => (SlughuntGameMode)lobby.gameMode;
     private static LobbyData lobbyData => lobby.GetData<LobbyData>();
-    private static PlayerData playerData => gameMode.playerData;
+    private static PlayerData playerData => lobbyData.GetPlayerData(OnlineManager.mePlayer);
 
     private readonly FLabel _stateLabel;
     private readonly FLabel _scoreLabel;

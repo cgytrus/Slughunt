@@ -45,7 +45,7 @@ public class WorldFiltersLabel : ProperlyAlignedMenuLabel {
             foreach (string item in set.Where(x => isItemInRegion(x, region)).Select(x => x.ToString())) {
                 if (!appendedRegion) {
                     _filtersLabelBuilder.Append("  ");
-                    _filtersLabelBuilder.Append(Region.GetRegionFullName(region.name, gameMode.character));
+                    _filtersLabelBuilder.Append(Region.GetRegionFullName(region.name, lobbyData.character));
                     _filtersLabelBuilder.Append(" (");
                     _filtersLabelBuilder.Append(region.name);
                     _filtersLabelBuilder.AppendLine("):");

@@ -49,6 +49,9 @@ public class LobbyData : OnlineResource.ResourceData {
     public uint switchedStateAt { get; private set; }
     private Dictionary<ushort, PlayerData> playerData { get; } = [];
 
+    public SlugcatStats.Name character => campaign;
+    public SlugcatStats.Timeline timeline => SlugcatStats.SlugcatToTimeline(campaign);
+
     public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;
 
     public void RemovePlayerData(OnlinePlayer player) {
