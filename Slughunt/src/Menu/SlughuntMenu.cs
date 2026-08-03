@@ -13,7 +13,6 @@ namespace Slughunt.Menu;
 public class SlughuntMenu : SmartMenu {
     public static ProcessManager.ProcessID id { get; } = new($"{nameof(SlughuntMenu)}+{Plugin.Id}", true);
 
-    // TODO: changing scene based on the region selector would b so cool!
     public override MenuScene.SceneID GetScene => MenuScene.SceneID.Landscape_CC;
 
     private static Lobby lobby => OnlineManager.lobby;
