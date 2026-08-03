@@ -67,11 +67,11 @@ public static partial class Rules {
         }
 
         public abstract class Participant : Role {
-            public abstract OnCatch onCatch { get; }
-            public abstract OnRespawn onRespawn { get; }
+            public abstract Catch catchRule { get; }
+            public abstract Death deathRule { get; }
             public abstract Participant oppositeRole { get; }
 
-            public override bool canRespawn => base.canRespawn && onRespawn != OnRespawn.Block;
+            public override bool canRespawn => base.canRespawn && deathRule != Death.NoRespawn;
 
             public override bool IsParticipating(bool dead) {
                 if (!dead)
@@ -86,8 +86,8 @@ public static partial class Rules {
             public override Preference AsPreference() => preferHunter;
             public override Participant AsParticipant() => this;
 
-            public override OnCatch onCatch => lobbyData.ruleset.hunterCatch;
-            public override OnRespawn onRespawn => lobbyData.ruleset.hunterRespawn;
+            public override Catch catchRule => lobbyData.ruleset.hunterCatch;
+            public override Death deathRule => lobbyData.ruleset.hunterDeath;
             public override Participant oppositeRole => hider;
 
             // can the hunter catch someone?
@@ -98,8 +98,8 @@ public static partial class Rules {
             public override Preference AsPreference() => preferHider;
             public override Participant AsParticipant() => this;
 
-            public override OnCatch onCatch => lobbyData.ruleset.hiderCatch;
-            public override OnRespawn onRespawn => lobbyData.ruleset.hiderRespawn;
+            public override Catch catchRule => lobbyData.ruleset.hiderCatch;
+            public override Death deathRule => lobbyData.ruleset.hiderDeath;
             public override Participant oppositeRole => hunter;
 
             public override bool IsTimed(bool dead) => base.IsTimed(dead) && CanCatch(dead);
@@ -113,7 +113,7 @@ public static partial class Rules {
                     return true;
 
                 // if hider dies on catch but is already dead, no point in catch
-                if (onCatch == OnCatch.Death)
+                if (catchRule == Catch.Death)
                     return false;
 
                 return true;

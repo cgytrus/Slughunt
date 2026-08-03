@@ -60,7 +60,7 @@ public partial class Plugin : BaseUnityPlugin {
         CustomHud();
         CustomSpawn();
         CatchRule();
-        RespawnRule();
+        DeathRule();
     }
 
     private static void DisableOverseers() {
@@ -362,7 +362,7 @@ public partial class Plugin : BaseUnityPlugin {
         lobby.owner.InvokeOnceRPC(rpc, otherOnline);
     }
 
-    private static void RespawnRule() {
+    private static void DeathRule() {
         On.Player.Die += (orig, self) => {
             bool alreadyWasDead = self.dead;
             orig(self);

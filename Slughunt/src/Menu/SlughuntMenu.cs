@@ -33,9 +33,9 @@ public class SlughuntMenu : SmartMenu {
     private readonly OpUpdown _hideTime;
     private readonly OpResourceSelector2 _rulesetPreset;
     private readonly OpResourceSelector2 _rulesetHiderCatch;
-    private readonly OpResourceSelector2 _rulesetHiderRespawn;
+    private readonly OpResourceSelector2 _rulesetHiderDeath;
     private readonly OpResourceSelector2 _rulesetHunterCatch;
-    private readonly OpResourceSelector2 _rulesetHunterRespawn;
+    private readonly OpResourceSelector2 _rulesetHunterDeath;
     private readonly OpResourceSelector2 _rulesetNextRound;
     private readonly SimplerCheckbox _endless;
     private readonly OpResourceSelector2 _hunterCompass;
@@ -207,16 +207,16 @@ public class SlughuntMenu : SmartMenu {
             );
             lobby.NewVersion();
             _rulesetHiderCatch!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderCatch);
-            _rulesetHiderRespawn!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
+            _rulesetHiderDeath!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderDeath);
             _rulesetHunterCatch!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
-            _rulesetHunterRespawn!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
-            _rulesetNextRound!.value = ValueConverter.ConvertToString(lobbyData.ruleset.nextRound);
+            _rulesetHunterDeath!.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterDeath);
+            _rulesetNextRound!.value = ValueConverter.ConvertToString(lobbyData.ruleset.nextRoundRole);
         };
         _ = new UIelementWrapper(tabWrapper, _rulesetPreset);
 
         AlignedMenuLabel rulesetHiderLabel = new(
             this, mainPage,
-            "Hider (catch/respawn)",
+            "Hider (catch/death)",
             rulesetPresetLabel.pos - new Vector2(-10f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
@@ -226,7 +226,7 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(rulesetHiderLabel);
         _rulesetHiderCatch = new OpResourceSelector2(
-            new Configurable<Rules.OnCatch>(lobbyData.ruleset.hiderCatch),
+            new Configurable<Rules.Catch>(lobbyData.ruleset.hiderCatch),
             _rulesetPreset.pos - new Vector2(0f, _rulesetPreset.size.y + 5f),
             _rulesetPreset.size.x * 0.5f - 2.5f
         );
@@ -234,32 +234,32 @@ public class SlughuntMenu : SmartMenu {
             if (!lobby.isOwner)
                 return;
             lobbyData.ruleset = lobbyData.ruleset with {
-                hiderCatch = ValueConverter.ConvertToValue<Rules.OnCatch>(value)
+                hiderCatch = ValueConverter.ConvertToValue<Rules.Catch>(value)
             };
             lobby.NewVersion();
             _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
         };
         _ = new UIelementWrapper(tabWrapper, _rulesetHiderCatch);
 
-        _rulesetHiderRespawn = new OpResourceSelector2(
-            new Configurable<Rules.OnRespawn>(lobbyData.ruleset.hiderRespawn),
+        _rulesetHiderDeath = new OpResourceSelector2(
+            new Configurable<Rules.Death>(lobbyData.ruleset.hiderDeath),
             _rulesetHiderCatch.pos + new Vector2(_rulesetHiderCatch.size.x + 5f, 0f),
             _rulesetHiderCatch.size.x
         );
-        _rulesetHiderRespawn.OnValueChanged += (_, value, _) => {
+        _rulesetHiderDeath.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
                 return;
             lobbyData.ruleset = lobbyData.ruleset with {
-                hiderRespawn = ValueConverter.ConvertToValue<Rules.OnRespawn>(value)
+                hiderDeath = ValueConverter.ConvertToValue<Rules.Death>(value)
             };
             lobby.NewVersion();
             _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
         };
-        _ = new UIelementWrapper(tabWrapper, _rulesetHiderRespawn);
+        _ = new UIelementWrapper(tabWrapper, _rulesetHiderDeath);
 
         AlignedMenuLabel rulesetHunterLabel = new(
             this, mainPage,
-            "Hunter (catch/respawn)",
+            "Hunter (catch/death)",
             rulesetHiderLabel.pos - new Vector2(0f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
@@ -269,40 +269,40 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(rulesetHunterLabel);
         _rulesetHunterCatch = new OpResourceSelector2(
-            new Configurable<Rules.OnCatch>(lobbyData.ruleset.hunterCatch),
+            new Configurable<Rules.Catch>(lobbyData.ruleset.hunterCatch),
             _rulesetHiderCatch.pos - new Vector2(0f, _rulesetHiderCatch.size.y + 5f),
-            _rulesetHiderRespawn.size.x
+            _rulesetHiderDeath.size.x
         );
         _rulesetHunterCatch.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
                 return;
             lobbyData.ruleset = lobbyData.ruleset with {
-                hunterCatch = ValueConverter.ConvertToValue<Rules.OnCatch>(value)
+                hunterCatch = ValueConverter.ConvertToValue<Rules.Catch>(value)
             };
             lobby.NewVersion();
             _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
         };
         _ = new UIelementWrapper(tabWrapper, _rulesetHunterCatch);
 
-        _rulesetHunterRespawn = new OpResourceSelector2(
-            new Configurable<Rules.OnRespawn>(lobbyData.ruleset.hunterRespawn),
+        _rulesetHunterDeath = new OpResourceSelector2(
+            new Configurable<Rules.Death>(lobbyData.ruleset.hunterDeath),
             _rulesetHunterCatch.pos + new Vector2(_rulesetHunterCatch.size.x + 5f, 0f),
             _rulesetHunterCatch.size.x
         );
-        _rulesetHunterRespawn.OnValueChanged += (_, value, _) => {
+        _rulesetHunterDeath.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
                 return;
             lobbyData.ruleset = lobbyData.ruleset with {
-                hunterRespawn = ValueConverter.ConvertToValue<Rules.OnRespawn>(value)
+                hunterDeath = ValueConverter.ConvertToValue<Rules.Death>(value)
             };
             lobby.NewVersion();
             _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
         };
-        _ = new UIelementWrapper(tabWrapper, _rulesetHunterRespawn);
+        _ = new UIelementWrapper(tabWrapper, _rulesetHunterDeath);
 
         AlignedMenuLabel rulesetNextRoundLabel = new(
             this, mainPage,
-            "Next Round",
+            "Next Round Role",
             rulesetHunterLabel.pos - new Vector2(0f, 24f + 5f),
             new Vector2(labelsWidth, 24f),
             false
@@ -312,7 +312,7 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(rulesetNextRoundLabel);
         _rulesetNextRound = new OpResourceSelector2(
-            new Configurable<Rules.OnNextRound>(lobbyData.ruleset.nextRound),
+            new Configurable<Rules.NextRoundRole>(lobbyData.ruleset.nextRoundRole),
             _rulesetHunterCatch.pos - new Vector2(0f, _rulesetHunterCatch.size.y + 5f),
             _rulesetPreset.size.x
         );
@@ -320,7 +320,7 @@ public class SlughuntMenu : SmartMenu {
             if (!lobby.isOwner)
                 return;
             lobbyData.ruleset = lobbyData.ruleset with {
-                nextRound = ValueConverter.ConvertToValue<Rules.OnNextRound>(value)
+                nextRoundRole = ValueConverter.ConvertToValue<Rules.NextRoundRole>(value)
             };
             lobby.NewVersion();
             _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
@@ -536,9 +536,9 @@ public class SlughuntMenu : SmartMenu {
         _hideTime.greyedOut = false;
         _rulesetPreset.greyedOut = false;
         _rulesetHiderCatch.greyedOut = false;
-        _rulesetHiderRespawn.greyedOut = !lobbyData.endless;
+        _rulesetHiderDeath.greyedOut = !lobbyData.endless;
         _rulesetHunterCatch.greyedOut = false;
-        _rulesetHunterRespawn.greyedOut = !lobbyData.endless;
+        _rulesetHunterDeath.greyedOut = !lobbyData.endless;
         _rulesetNextRound.greyedOut = !lobbyData.endless;
         _endless.inactive = false;
         _hunterCompass.greyedOut = false;
@@ -562,9 +562,9 @@ public class SlughuntMenu : SmartMenu {
         _hideTime.greyedOut = true;
         _rulesetPreset.greyedOut = true;
         _rulesetHiderCatch.greyedOut = true;
-        _rulesetHiderRespawn.greyedOut = true;
+        _rulesetHiderDeath.greyedOut = true;
         _rulesetHunterCatch.greyedOut = true;
-        _rulesetHunterRespawn.greyedOut = true;
+        _rulesetHunterDeath.greyedOut = true;
         _rulesetNextRound.greyedOut = true;
         _endless.inactive = true;
         _hunterCompass.greyedOut = true;
@@ -580,10 +580,10 @@ public class SlughuntMenu : SmartMenu {
         _hideTime.valueInt = (int)lobbyData.hideTime.TotalSeconds;
         _rulesetPreset.value = ValueConverter.ConvertToString(lobbyData.ruleset.GetPresetName());
         _rulesetHiderCatch.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderCatch);
-        _rulesetHiderRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderRespawn);
+        _rulesetHiderDeath.value = ValueConverter.ConvertToString(lobbyData.ruleset.hiderDeath);
         _rulesetHunterCatch.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterCatch);
-        _rulesetHunterRespawn.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterRespawn);
-        _rulesetNextRound.value = ValueConverter.ConvertToString(lobbyData.ruleset.nextRound);
+        _rulesetHunterDeath.value = ValueConverter.ConvertToString(lobbyData.ruleset.hunterDeath);
+        _rulesetNextRound.value = ValueConverter.ConvertToString(lobbyData.ruleset.nextRoundRole);
         _endless.Checked = lobbyData.endless;
         _hunterCompass.value = ValueConverter.ConvertToString(lobbyData.hunterCompass);
         _hiderCompass.value = ValueConverter.ConvertToString(lobbyData.hiderCompass);

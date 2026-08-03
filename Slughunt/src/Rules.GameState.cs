@@ -47,32 +47,29 @@ public static partial class Rules {
 
         public abstract class InGame : GameState {
             public override bool canEnterGame => playerData.ready;
-            public override bool canJoin => lobbyData.endless && (
-                lobbyData.ruleset.hiderRespawn != OnRespawn.Block ||
-                lobbyData.ruleset.hunterRespawn != OnRespawn.Block
-            );
+            public override bool canJoin => Role.hunter.canRespawn || Role.hider.canRespawn;
 
             protected static RainWorldGame game => (RainWorldGame)OnlineManager.instance.manager.currentMainLoop;
 
             public override void Join(PlayerData data) {
-                data.ready = lobbyData.endless && (
-                    lobbyData.ruleset.hiderRespawn != OnRespawn.Block ||
-                    lobbyData.ruleset.hunterRespawn != OnRespawn.Block
-                );
-                if (!data.ready)
-                    return;
-
-                if (lobbyData.ruleset.hiderRespawn == OnRespawn.Block) {
+                bool hunterCanRespawn = Role.hunter.canRespawn;
+                bool hiderCanRespawn = Role.hider.canRespawn;
+                if (hunterCanRespawn && hiderCanRespawn) {
+                    int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role is Role.Hunter);
+                    data.role = data.role.AsPreference().PickParticipant(hunterCount);
+                    data.ready = true;
+                }
+                else if (hunterCanRespawn) {
                     data.role = Role.hunter;
-                    return;
+                    data.ready = true;
                 }
-                if (lobbyData.ruleset.hunterRespawn == OnRespawn.Block) {
+                else if (hiderCanRespawn) {
                     data.role = Role.hider;
-                    return;
+                    data.ready = true;
                 }
-
-                int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role is Role.Hunter);
-                data.role = data.role.AsPreference().PickParticipant(hunterCount);
+                else {
+                    data.ready = false;
+                }
             }
 
             public override void Leave(PlayerData data) {
@@ -88,7 +85,7 @@ public static partial class Rules {
         public sealed class Setup : InGame {
             public override void Enter(GameState from) {
                 if (from is InGame)
-                    ApplyNextRound();
+                    OnNextRound();
 
                 lobbyData.startingShelter = lobbyData.RandomShelter();
 

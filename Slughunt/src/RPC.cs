@@ -25,8 +25,8 @@ public static class RPC {
         if (hunterData.role is not Rules.Role.Hunter || hiderData.role is not Rules.Role.Hider)
             return;
 
-        Rules.ApplyCatch(hunterData, out int hunterStun);
-        Rules.ApplyCatch(hiderData, out int hiderStun);
+        Rules.OnCatch(hunterData, out int hunterStun);
+        Rules.OnCatch(hiderData, out int hiderStun);
         lobby.NewVersion();
 
         hunter.InvokeRPC(OnCatchConfirm, hunterData.dead, hunterStun);
@@ -52,13 +52,13 @@ public static class RPC {
 
     [RPCMethod]
     public static void OnDeath() {
-        fromData.dead = true;
+        Rules.OnDeath(fromData);
         lobby.NewVersion();
     }
 
     [RPCMethod]
     public static void OnRespawn() {
-        Rules.ApplyRespawn(fromData);
+        Rules.OnRespawn(fromData);
         lobby.NewVersion();
     }
 
