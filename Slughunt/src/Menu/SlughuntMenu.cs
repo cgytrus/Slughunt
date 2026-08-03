@@ -56,9 +56,7 @@ public class SlughuntMenu : SmartMenu {
             "stupid",
             new Vector2(1056f, 50f), new Vector2(110f, 30f)
         );
-        _readyButton.OnClick += _ => {
-            lobby.owner.InvokeRPC(SwitchReady);
-        };
+        _readyButton.OnClick += _ => lobby.owner.InvokeRPC(SwitchReady);
         mainPage.subObjects.Add(_readyButton);
 
         _preferenceButton = new SimplerButton(
@@ -66,9 +64,7 @@ public class SlughuntMenu : SmartMenu {
             "penis",
             _readyButton.pos + new Vector2(0f, _readyButton.size.y + 10f), new Vector2(110f, 30f)
         );
-        _preferenceButton.OnClick += _ => {
-            lobby.owner.InvokeRPC(SwitchPreference);
-        };
+        _preferenceButton.OnClick += _ => lobby.owner.InvokeRPC(SwitchPreference);
         mainPage.subObjects.Add(_preferenceButton);
 
         _startButton = new OpSimpleButton(
@@ -99,10 +95,12 @@ public class SlughuntMenu : SmartMenu {
             _players.pos + new Vector2(PlayerCard.Width + 20f, -30f), new Vector2(110f, 30f)
         );
         colorsButton.OnClick += _ => {
-            ColorSlugcatDialog colorDialog = new(manager, SlughuntGameMode.save, () => {
-                gameMode.avatarSettings.currentColors =
-                    manager.rainWorld.progression.GetCustomColors(SlughuntGameMode.save);
-            });
+            ColorSlugcatDialog colorDialog = new(
+                manager, SlughuntGameMode.save, () => {
+                    gameMode.avatarSettings.currentColors =
+                        manager.rainWorld.progression.GetCustomColors(SlughuntGameMode.save);
+                }
+            );
             manager.ShowDialog(colorDialog);
         };
         mainPage.subObjects.Add(colorsButton);
@@ -121,7 +119,7 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(targetHunterCountLabel);
         _targetHunterCount = new OpUpdown(
-            new Configurable<int>(lobbyData.targetHunterCount, accept: new ConfigAcceptableRange<int>(0, ushort.MaxValue)),
+            new Configurable<int>(lobbyData.targetHunterCount, new ConfigAcceptableRange<int>(0, ushort.MaxValue)),
             targetHunterCountLabel.pos + new Vector2(labelsWidth, 0f), 80f
         );
         _targetHunterCount._lastArrX = _targetHunterCount._arrX;
@@ -173,7 +171,7 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(hideTimeLabel);
         _hideTime = new OpUpdown(
-            new Configurable<int>((int)lobbyData.hideTime.TotalSeconds, accept: new ConfigAcceptableRange<int>(0, int.MaxValue)),
+            new Configurable<int>((int)lobbyData.hideTime.TotalSeconds, new ConfigAcceptableRange<int>(0, int.MaxValue)),
             hideTimeLabel.pos + new Vector2(labelsWidth, 0f), 80f
         );
         _hideTime._lastArrX = _hideTime._arrX;

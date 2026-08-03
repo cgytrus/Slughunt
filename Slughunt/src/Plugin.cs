@@ -239,9 +239,11 @@ public partial class Plugin : BaseUnityPlugin {
 
     private static void RoleColors() {
         On.PlayerGraphics.DrawSprites += (orig, self, sLeaser, rCam, timeStacker, camPos) => {
-            if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode) ||
+            if (
+                !SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode) ||
                 !self.player.abstractPhysicalObject.GetOnlineObject(out OnlinePhysicalObject? opo) ||
-                opo?.owner is null) {
+                opo?.owner is null
+            ) {
                 orig(self, sLeaser, rCam, timeStacker, camPos);
                 return;
             }
@@ -268,11 +270,13 @@ public partial class Plugin : BaseUnityPlugin {
             orig(self);
             if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
                 return;
-            self.UpdateGraphic(gameMode.playerData.role switch {
-                Rules.Role.Hunter => 0,
-                Rules.Role.Hider => 4,
-                _ => 9
-            }, 9);
+            self.UpdateGraphic(
+                gameMode.playerData.role switch {
+                    Rules.Role.Hunter => 0,
+                    Rules.Role.Hider => 4,
+                    _ => 9
+                }, 9
+            );
         };
         On.HUD.HUD.InitSinglePlayerHud += (orig, self, cam) => {
             orig(self, cam);
@@ -284,8 +288,10 @@ public partial class Plugin : BaseUnityPlugin {
 
     private static void CustomSpawn() {
         On.SaveState.setDenPosition += (orig, self) => {
-            if (self.saveStateNumber != SlughuntGameMode.save ||
-                !SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode)) {
+            if (
+                self.saveStateNumber != SlughuntGameMode.save ||
+                !SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode)
+            ) {
                 orig(self);
                 return;
             }
@@ -351,8 +357,10 @@ public partial class Plugin : BaseUnityPlugin {
         gameMode.lobby.owner.InvokeOnceRPC(rpc, otherOnline);
     }
 
-    private static bool CatchCheckPlayer(SlughuntGameMode gameMode, [NotNullWhen(true)] OnlinePlayer? player,
-        Rules.Role role) {
+    private static bool CatchCheckPlayer(
+        SlughuntGameMode gameMode, [NotNullWhen(true)] OnlinePlayer? player,
+        Rules.Role role
+    ) {
         if (player is null)
             return false;
         PlayerData data = gameMode.lobbyData.GetPlayerData(player);

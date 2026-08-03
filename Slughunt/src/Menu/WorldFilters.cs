@@ -105,11 +105,13 @@ public class WorldFilters : RectangularMenuObject {
         OpSimpleButton shortcutAllButton = AddFilterButton(shortcutRemoveButton, "*");
         OpSimpleButton shortcutAllAllButton = AddFilterButton(shortcutAllButton, "**");
         _shortcutSelector1.OnValueChanged += (_, value, _) => {
-            _shortcutSelector2.SetItems(_shortcuts
-                .Where(x => x.a == value || x.b == value)
-                .Select(x => new ListItem(x.a == value ? x.b : x.a) { desc = x.a == value ? x.b : x.a })
-                .Distinct()
-                .ToArray());
+            _shortcutSelector2.SetItems(
+                _shortcuts
+                    .Where(x => x.a == value || x.b == value)
+                    .Select(x => new ListItem(x.a == value ? x.b : x.a) { desc = x.a == value ? x.b : x.a })
+                    .Distinct()
+                    .ToArray()
+            );
         };
         shortcutAddButton.OnClick += _ => {
             if (string.IsNullOrEmpty(_shortcutSelector1.value))
@@ -184,14 +186,17 @@ public class WorldFilters : RectangularMenuObject {
     }
 
     public void UpdateRegions() {
-        _regionSelector.SetItems(Region.GetFullRegionOrder(gameMode.timeline)
-            .Select((x, i) => {
-                string fullName = $"{Region.GetRegionFullName(x, gameMode.character)} ({x})";
-                return new ListItem(x, fullName, i) {
-                    desc = fullName
-                };
-            })
-            .ToArray());
+        _regionSelector.SetItems(
+            Region.GetFullRegionOrder(gameMode.timeline)
+                .Select((x, i) => {
+                        string fullName = $"{Region.GetRegionFullName(x, gameMode.character)} ({x})";
+                        return new ListItem(x, fullName, i) {
+                            desc = fullName
+                        };
+                    }
+                )
+                .ToArray()
+        );
     }
 
     public override void Update() {

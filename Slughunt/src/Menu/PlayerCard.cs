@@ -34,8 +34,10 @@ public class PlayerCard : PositionedMenuObject {
         // DisplayName may generate a new time every time its accessed so cant do it in update
         _name = player.id.DisplayName;
 
-        _nameLabel = new ProperlyAlignedMenuLabel(menu, this, "cock", new Vector2(0f, 0f),
-            new Vector2(Width, Height), false) {
+        _nameLabel = new ProperlyAlignedMenuLabel(
+            menu, this, "cock", new Vector2(0f, 0f),
+            new Vector2(Width, Height), false
+        ) {
             label = {
                 alignment = FLabelAlignment.Left,
                 anchorX = 0.0f,
@@ -44,8 +46,10 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_nameLabel);
 
-        _pingLabel = new ProperlyAlignedMenuLabel(menu, this, "cock", new Vector2(0f, -16f),
-            new Vector2(Width, Height), false) {
+        _pingLabel = new ProperlyAlignedMenuLabel(
+            menu, this, "cock", new Vector2(0f, -16f),
+            new Vector2(Width, Height), false
+        ) {
             label = {
                 alignment = FLabelAlignment.Left,
                 anchorX = 0.0f,
@@ -55,8 +59,10 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_pingLabel);
 
-        _hostLabel = new ProperlyAlignedMenuLabel(menu, this, "(host)", new Vector2(0f, -32f),
-            new Vector2(Width, Height), false) {
+        _hostLabel = new ProperlyAlignedMenuLabel(
+            menu, this, "(host)", new Vector2(0f, -32f),
+            new Vector2(Width, Height), false
+        ) {
             label = {
                 alignment = FLabelAlignment.Left,
                 anchorX = 0.0f,
@@ -66,8 +72,10 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_hostLabel);
 
-        _totalScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, 0f),
-            new Vector2(Width, Height), false) {
+        _totalScoreLabel = new ProperlyAlignedMenuLabel(
+            menu, this, "balls", new Vector2(Width, 0f),
+            new Vector2(Width, Height), false
+        ) {
             label = {
                 alignment = FLabelAlignment.Right,
                 anchorX = 1.0f,
@@ -77,8 +85,10 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_totalScoreLabel);
 
-        _hunterScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, -16f),
-            new Vector2(Width, Height), false) {
+        _hunterScoreLabel = new ProperlyAlignedMenuLabel(
+            menu, this, "balls", new Vector2(Width, -16f),
+            new Vector2(Width, Height), false
+        ) {
             label = {
                 alignment = FLabelAlignment.Right,
                 anchorX = 1.0f,
@@ -88,8 +98,10 @@ public class PlayerCard : PositionedMenuObject {
         };
         subObjects.Add(_hunterScoreLabel);
 
-        _hiderScoreLabel = new ProperlyAlignedMenuLabel(menu, this, "balls", new Vector2(Width, -32f),
-            new Vector2(Width, Height), false) {
+        _hiderScoreLabel = new ProperlyAlignedMenuLabel(
+            menu, this, "balls", new Vector2(Width, -32f),
+            new Vector2(Width, Height), false
+        ) {
             label = {
                 alignment = FLabelAlignment.Right,
                 anchorX = 1.0f,

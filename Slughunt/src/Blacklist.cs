@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Expedition;
 using MoreSlugcats;
+using Watcher;
 
 namespace Slughunt;
 
@@ -15,9 +16,10 @@ public static class Blacklist {
         PlacedObject.Type.BlinkingFlower,
         MoreSlugcatsEnums.PlacedObjectType.MoonCloak,
         PlacedObject.Type.RippleSpawnEgg,
-        Watcher.WatcherEnums.PlacedObjectType.CosmeticRipple
+        WatcherEnums.PlacedObjectType.CosmeticRipple
     ];
-    public static bool HasPlacedObject(PlacedObject po) => bannedPlacedObjects.Contains(po.type) ||
+    public static bool HasPlacedObject(PlacedObject po) =>
+        bannedPlacedObjects.Contains(po.type) ||
         po.type.value.EndsWith("Token", StringComparison.Ordinal) ||
         po.type.value.EndsWith("Instruction", StringComparison.Ordinal);
 
@@ -26,7 +28,7 @@ public static class Blacklist {
         AbstractPhysicalObject.AbstractObjectType.BlinkingFlower,
         AbstractPhysicalObject.AbstractObjectType.AttachedBee,
         MoreSlugcatsEnums.AbstractObjectType.Bullet,
-        Watcher.WatcherEnums.AbstractObjectType.RippleSpawn
+        WatcherEnums.AbstractObjectType.RippleSpawn
     ];
     public static bool SyncAPO(AbstractPhysicalObject apo, bool room = false) =>
         !unsyncedAbstractObjects.Contains(apo.type) &&
