@@ -21,6 +21,12 @@ public readonly record struct Ruleset(
     );
 
     public static readonly Ruleset tag = new(
+        Rules.Catch.SwitchSide, Rules.Death.Nothing,
+        Rules.Catch.SwitchSide, Rules.Death.Nothing,
+        Rules.NextRoundRole.NoRepeats
+    );
+
+    public static readonly Ruleset tag2P = new(
         Rules.Catch.SwitchSide, Rules.Death.NoRespawn,
         Rules.Catch.SwitchSide, Rules.Death.Nothing,
         Rules.NextRoundRole.NoRepeats
@@ -30,13 +36,15 @@ public readonly record struct Ruleset(
         [Description("Custom")] Custom,
         [Description("Hide and Seek")] HideAndSeek,
         [Description("Infection")] Infection,
-        [Description("Tag")] Tag
+        [Description("Tag")] Tag,
+        [Description("Tag (for 2 players)")] Tag2P
     }
 
     public PresetName GetPresetName() =>
         this == hideAndSeek ? PresetName.HideAndSeek :
         this == infection ? PresetName.Infection :
         this == tag ? PresetName.Tag :
+        this == tag2P ? PresetName.Tag2P :
         PresetName.Custom;
 
     public static Ruleset GetPreset(PresetName preset, Ruleset custom) => preset switch {
@@ -44,6 +52,7 @@ public readonly record struct Ruleset(
         PresetName.HideAndSeek => hideAndSeek,
         PresetName.Infection => infection,
         PresetName.Tag => tag,
+        PresetName.Tag2P => tag2P,
         _ => default(Ruleset)
     };
 
