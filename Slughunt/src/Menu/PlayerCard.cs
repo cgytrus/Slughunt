@@ -112,11 +112,11 @@ public class PlayerCard : PositionedMenuObject {
             _text.Append(" (in game)");
         _nameLabel.label.text = _text.ToString();
         _nameLabel.label.color = data.role switch {
-            PlayerRole.None => global::Menu.Menu.MenuRGB(data.ready ? global::Menu.Menu.MenuColors.White : global::Menu.Menu.MenuColors.MediumGrey),
-            PlayerRole.PreferHunter => new HSLColor(12f / 360f, 0.65f, data.ready ? 0.67f : 0.5f).rgb,
-            PlayerRole.PreferHider => new HSLColor(0.6f, 0.65f, data.ready ? 0.67f : 0.5f).rgb,
-            PlayerRole.Hunter => new HSLColor(12f / 360f, 0.65f, 0.67f).rgb,
-            PlayerRole.Hider => new HSLColor(0.6f, 0.65f, 0.67f).rgb,
+            Rules.Role.None => global::Menu.Menu.MenuRGB(data.ready ? global::Menu.Menu.MenuColors.White : global::Menu.Menu.MenuColors.MediumGrey),
+            Rules.Role.PreferHunter => new HSLColor(12f / 360f, 0.65f, data.ready ? 0.67f : 0.5f).rgb,
+            Rules.Role.PreferHider => new HSLColor(0.6f, 0.65f, data.ready ? 0.67f : 0.5f).rgb,
+            Rules.Role.Hunter => new HSLColor(12f / 360f, 0.65f, 0.67f).rgb,
+            Rules.Role.Hider => new HSLColor(0.6f, 0.65f, 0.67f).rgb,
             _ => global::Menu.Menu.MenuRGB(global::Menu.Menu.MenuColors.White)
         };
 

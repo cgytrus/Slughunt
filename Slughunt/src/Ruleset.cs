@@ -2,30 +2,6 @@
 
 namespace Slughunt;
 
-public static class Rules {
-    public enum OnCatch {
-        Nothing,
-        Death,
-        [Description("Switch Side")] SwitchSide
-    }
-
-    public enum OnRespawn {
-        Nothing,
-        Block,
-        [Description("Switch Side")] SwitchSide
-    }
-
-    public enum OnNextRound {
-        [Description("Random Side")] RandomSide,
-        [Description("Switch Side")] SwitchSide
-    }
-}
-
-public enum PlayerRole : byte { None, PreferHunter, PreferHider, Hunter, Hider }
-public enum GameState : byte { Lobby, Setup, Hide, Hunt }
-public enum CompassMode { Off, Radar, Room, Position } // TODO: i dont like the name radar
-public enum TauntMode { Off, Sound, Radar, Room, Position }
-
 public readonly record struct Ruleset(
     Rules.OnCatch hiderCatch, Rules.OnRespawn hiderRespawn,
     Rules.OnCatch hunterCatch, Rules.OnRespawn hunterRespawn,
@@ -48,18 +24,6 @@ public readonly record struct Ruleset(
         Rules.OnCatch.SwitchSide, Rules.OnRespawn.Nothing,
         Rules.OnNextRound.SwitchSide
     );
-
-    public Rules.OnCatch GetCatchRuleFor(PlayerRole role) => role switch {
-        PlayerRole.Hunter => hunterCatch,
-        PlayerRole.Hider => hiderCatch,
-        _ => Rules.OnCatch.Nothing
-    };
-
-    public Rules.OnRespawn GetRespawnRuleFor(PlayerRole role) => role switch {
-        PlayerRole.Hunter => hunterRespawn,
-        PlayerRole.Hider => hiderRespawn,
-        _ => Rules.OnRespawn.Nothing
-    };
 
     public enum PresetName {
         [Description("Custom")] Custom,

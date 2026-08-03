@@ -4,22 +4,21 @@ using RainMeadow;
 namespace Slughunt;
 
 public sealed record PlayerData {
+    private static uint currentTick => OnlineManager.lobby.owner.tick;
+
     public bool ready { get; set; }
 
     public bool pendingCatch { get; set; }
 
-    public bool participating => participant.participating;
-    public Participant participant => new(role, 0, dead);
-
-    private PlayerRole _role;
-    public PlayerRole role {
+    private Rules.Role _role = Rules.Role.none;
+    public Rules.Role role {
         get => _role;
         set {
             if (_role == value)
                 return;
-            SaveTime();
+            SaveTime(); // unsaved time depends on role so it must be saved before role is changed
             _role = value;
-            if (value is not PlayerRole.Hunter and not PlayerRole.Hider)
+            if (value is not Rules.Role.Participant)
                 pendingCatch = false;
         }
     }
@@ -31,26 +30,24 @@ public sealed record PlayerData {
             if (_dead == value)
                 return;
             _dead = value;
-            if (participating) {
-                // pretend we started later to account for time not participating
-                _changedRoleAt += OnlineManager.lobby.owner.tick - _stoppedParticipatingAt;
+            if (role.IsTimed(dead)) {
+                // pretend we started later to compensate for the untimed period
+                _changedRoleAt += currentTick - _stoppedTimingAt;
             }
             else {
-                _stoppedParticipatingAt = OnlineManager.lobby.owner.tick;
+                _stoppedTimingAt = currentTick;
             }
         }
     }
 
     private uint _changedRoleAt;
-    private uint _stoppedParticipatingAt;
+    private uint _stoppedTimingAt;
 
-    private uint lastParticipatingAt => participating ? OnlineManager.lobby.owner.tick : _stoppedParticipatingAt;
-
-    public uint unsavedTime => lastParticipatingAt - _changedRoleAt;
+    public uint unsavedTime => (role.IsTimed(dead) ? currentTick : _stoppedTimingAt) - _changedRoleAt;
 
     public long currentTotalTime => role switch {
-        PlayerRole.Hunter => totalTime - unsavedTime,
-        PlayerRole.Hider => totalTime + unsavedTime,
+        Rules.Role.Hunter => totalTime - unsavedTime,
+        Rules.Role.Hider => totalTime + unsavedTime,
         _ => totalTime
     };
 
@@ -62,40 +59,24 @@ public sealed record PlayerData {
     public long totalScore => (long)caughtAsHunter - caughtAsHider;
     public long totalTime => (long)timeAsHider - timeAsHunter;
 
+    public void Reset() {
+        ready = false;
+        pendingCatch = false;
+        role = Rules.Role.none;
+        dead = false;
+    }
+
     public void ResetUnsavedTime() {
-        _changedRoleAt = OnlineManager.lobby.owner.tick;
-        _stoppedParticipatingAt = OnlineManager.lobby.owner.tick;
+        _changedRoleAt = currentTick;
+        _stoppedTimingAt = currentTick;
     }
 
     private void SaveTime() {
-        if (role == PlayerRole.Hunter)
+        if (role is Rules.Role.Hunter)
             timeAsHunter += unsavedTime;
-        else if (role == PlayerRole.Hider)
+        else if (role is Rules.Role.Hider)
             timeAsHider += unsavedTime;
         ResetUnsavedTime();
-    }
-
-    public void SwitchSide() {
-        switch (role) {
-            case PlayerRole.None:
-                role = PlayerRole.PreferHunter;
-                break;
-            case PlayerRole.PreferHunter:
-                role = PlayerRole.PreferHider;
-                break;
-            case PlayerRole.PreferHider:
-                role = PlayerRole.None;
-                break;
-            case PlayerRole.Hunter:
-                role = PlayerRole.Hider;
-                break;
-            case PlayerRole.Hider:
-                role = PlayerRole.Hunter;
-                break;
-            default:
-                Plugin.logger.LogError($"unknown role? {role}");
-                break;
-        }
     }
 
     public void Write(BinaryWriter writer) {
@@ -104,7 +85,7 @@ public sealed record PlayerData {
         writer.Write((byte)role);
         writer.Write(dead);
         writer.Write(_changedRoleAt);
-        writer.Write(_stoppedParticipatingAt);
+        writer.Write(_stoppedTimingAt);
         writer.Write(timeAsHunter);
         writer.Write(timeAsHider);
         writer.Write(caughtAsHunter);
@@ -114,10 +95,10 @@ public sealed record PlayerData {
     public static PlayerData Read(BinaryReader reader) => new() {
         ready = reader.ReadBoolean(),
         pendingCatch = reader.ReadBoolean(),
-        _role = (PlayerRole)reader.ReadByte(),
+        _role = (Rules.Role)reader.ReadByte(),
         _dead = reader.ReadBoolean(),
         _changedRoleAt = reader.ReadUInt32(),
-        _stoppedParticipatingAt = reader.ReadUInt32(),
+        _stoppedTimingAt = reader.ReadUInt32(),
         timeAsHunter = reader.ReadUInt32(),
         timeAsHider = reader.ReadUInt32(),
         caughtAsHunter = reader.ReadUInt32(),

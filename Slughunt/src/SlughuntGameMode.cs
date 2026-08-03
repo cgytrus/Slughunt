@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using RainMeadow;
 using Slughunt.Menu;
-using UnityEngine;
 
 namespace Slughunt;
 
@@ -58,10 +54,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (OnlineManager.instance.manager.currentMainLoop is not RainWorldGame)
             return;
         OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
-        if (!lobby.isOwner)
-            return;
-        lobbyData.state = GameState.Lobby;
-        lobby.NewVersion();
     }
 
     public override void PlayerLeftLobby(OnlinePlayer player) {
@@ -110,10 +102,8 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         RainMeadow.RainMeadow.creatureCustomizations.GetValue(creature, _ => data);
     }
 
-    public void StartGame() {
-        if (!playerData.ready ||
-            !lobby.isOwner && lobbyData.state == GameState.Lobby ||
-            OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2)
+    private void EnterGame() {
+        if (!lobbyData.state.canEnterGame)
             return;
         ProcessManager manager = OnlineManager.instance.manager;
         if (ModManager.CoopAvailable)
@@ -128,45 +118,28 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
 
     public override void LobbyTick(uint tick) {
         base.LobbyTick(tick);
-        if (lobby.isOwner) {
-            SetExpectedStateForProcess();
-        }
-        else if (!TrySwitchToExpectedProcess()) {
-            return;
-        }
-        CleanupOldAvatars();
-        if (OnlineManager.instance.manager.currentMainLoop is RainWorldGame game)
-            GameTick(game);
-    }
-
-    private void SetExpectedStateForProcess() {
-        ProcessManager.ProcessID? process = OnlineManager.instance.manager.currentMainLoop?.ID;
-        if (lobbyData.state != GameState.Lobby && process != ProcessManager.ProcessID.Game) {
-            lobbyData.state = GameState.Lobby;
-            lobby.NewVersion();
-        }
-        else if (lobbyData.state == GameState.Lobby && process == ProcessManager.ProcessID.Game) {
-            lobbyData.state = GameState.Setup;
-            lobby.NewVersion();
-        }
-        // once we are in game we control the state based on the gameplay in LobbyTick
-    }
-
-    private bool TrySwitchToExpectedProcess() {
         ProcessManager manager = OnlineManager.instance.manager;
+        if (!TrySwitchToExpectedProcess(manager))
+            return;
+        CleanupOldAvatars();
+        if (lobbyData.state is not Rules.GameState.InGame state)
+            return;
+        state.Tick();
+        state.GoToNextIfReady();
+    }
+
+    private bool TrySwitchToExpectedProcess(ProcessManager manager) {
         if (manager.currentMainLoop is null)
             return false;
-        if (lobbyData.state == GameState.Lobby && manager.currentMainLoop.ID != ProcessManager.ProcessID.Game)
-            return true;
-        if (lobbyData.state != GameState.Lobby && manager.currentMainLoop.ID == ProcessManager.ProcessID.Game)
+        if (lobbyData.state is Rules.GameState.InGame == (manager.currentMainLoop?.ID == ProcessManager.ProcessID.Game))
             return true;
         if (manager.IsSwitchingProcesses() || manager.IsRunningAnyDialog || manager._processSwitchQueue.Count > 0)
             return false;
-        if (lobbyData.state == GameState.Lobby) {
+        if (lobbyData.state is Rules.GameState.InLobby) {
             manager.RequestMainProcessSwitch(SlughuntMenu.id);
         }
         else {
-            StartGame();
+            EnterGame();
         }
         return false;
     }
@@ -181,224 +154,26 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         }
     }
 
-    public override void PreGameStart() {
-        base.PreGameStart();
-        PrepareRound();
-    }
-
-    public override void PostGameStart(RainWorldGame game) {
-        base.PostGameStart(game);
-    }
-
-    private void PrepareRound() {
-        if (!lobby.isOwner)
-            return;
-        lobbyData.startingShelter = lobbyData.RandomShelter();
-        AssignRoles();
-        lobbyData.state = GameState.Setup;
-        lobby.NewVersion();
-    }
-
-    private PlayerRole PickRole(PlayerRole role, int currentHunters) {
-        int maxHunters = lobby.clientSettings.Count - 1;
-        if (currentHunters >= maxHunters)
-            return PlayerRole.Hider;
-        if (currentHunters < 1)
-            return PlayerRole.Hunter;
-        if (role == PlayerRole.PreferHunter && !lobbyData.allowHunterPreference)
-            role = PlayerRole.None;
-        if (role == PlayerRole.PreferHider && !lobbyData.allowHiderPreference)
-            role = PlayerRole.None;
-        if (lobbyData.targetHunterCount == 0) {
-            return role == PlayerRole.PreferHunter ? PlayerRole.Hunter :
-                role == PlayerRole.PreferHider ? PlayerRole.Hider :
-                RXRandom.Bool() ? PlayerRole.Hunter : PlayerRole.Hider;
-        }
-        int targetHunters = Mathf.Clamp(lobbyData.targetHunterCount, 1, maxHunters);
-        return currentHunters < targetHunters ? PlayerRole.Hunter : PlayerRole.Hider;
-    }
-
-    private void AssignRoles() {
-        List<PlayerData> players = OnlineManager.players
-            .Select(x => lobbyData.GetPlayerData(x))
-            .OrderBy(_ => RXRandom.Int())
-            .ToList();
-        int hunterCount = 0;
-        foreach (PlayerData data in players.Where(x => x.role == PlayerRole.PreferHunter)) {
-            data.role = PickRole(data.role, hunterCount);
-            if (data.role == PlayerRole.Hunter)
-                hunterCount++;
-        }
-        foreach (PlayerData data in players.Where(x => x.role == PlayerRole.None)) {
-            data.role = PickRole(data.role, hunterCount);
-            if (data.role == PlayerRole.Hunter)
-                hunterCount++;
-        }
-        foreach (PlayerData data in players.Where(x => x.role == PlayerRole.PreferHider)) {
-            data.role = PickRole(data.role, hunterCount);
-            if (data.role == PlayerRole.Hunter)
-                hunterCount++;
-        }
-    }
-
-    public void AssignLateRole(PlayerData data) {
-        if (lobbyData.ruleset.hiderRespawn == Rules.OnRespawn.Block) {
-            data.role = PlayerRole.Hunter;
-            return;
-        }
-        if (lobbyData.ruleset.hunterRespawn == Rules.OnRespawn.Block) {
-            data.role = PlayerRole.Hider;
-            return;
-        }
-
-        int hunterCount = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).role == PlayerRole.Hunter);
-        data.role = PickRole(data.role, hunterCount);
-    }
-
-    private void GameTick(RainWorldGame game) {
-        switch (lobbyData.state) {
-            case GameState.Setup:
-                SetupTick(game);
-                break;
-            case GameState.Hide:
-                HideTick(game);
-                break;
-            case GameState.Hunt:
-                HuntTick();
-                break;
-            case GameState.Lobby:
-            default:
-                Plugin.logger.LogError($"invalid game state {lobbyData.state}");
-                break;
-        }
-    }
-
-    private void SetupTick(RainWorldGame game) {
-        if (
-            game.Players[0].slatedForDeletion ||
-            game.Players[0].state.dead ||
-            !string.Equals(game.Players[0].Room?.name, lobbyData.startingShelter, StringComparison.OrdinalIgnoreCase)
-        ) {
-            Plugin.Respawn(game, lobbyData.startingShelter);
-        }
-        if (playerData.role == PlayerRole.Hunter)
-            game.FirstRealizedPlayer?.stun = (int)(40 * lobbyData.hideTime.TotalSeconds);
-        else if (playerData.role == PlayerRole.Hider)
-            game.FirstRealizedPlayer?.inShortcutVessel?.wait = 2;
-        game.FirstRealizedPlayer?.ChangeCollisionLayer(0);
-
-        if (!lobby.isOwner)
-            return;
-        bool allHidersInShortcuts = true;
-        foreach (OnlinePlayer player in OnlineManager.players) {
-            PlayerData data = lobbyData.GetPlayerData(player);
-            if (!data.ready)
-                continue;
-            data.dead = false;
-            if (data.role != PlayerRole.Hider)
-                continue;
-            allHidersInShortcuts = allHidersInShortcuts &&
-                lobby.clientSettings.TryGetValue(player, out ClientSettings settings) &&
-                settings.inGame &&
-                settings.avatars.All(x => x.FindEntity(true) is OnlineCreature {
-                    realized: true, realizedCreature.inShortcut: true
-                });
-        }
-        if (!allHidersInShortcuts)
-            return;
-        lobbyData.state = GameState.Hide;
-        lobby.NewVersion();
-    }
-
-    private void HideTick(RainWorldGame game) {
-        game.FirstRealizedPlayer?.ChangeCollisionLayer(1);
-        if (!lobby.isOwner)
-            return;
-        if (lobby.owner.tick - lobbyData.switchedStateAt < (long)lobbyData.hideTimeFrames)
-            return;
-        foreach (OnlinePlayer player in OnlineManager.players)
-            lobbyData.GetPlayerData(player).ResetUnsavedTime();
-        lobbyData.state = GameState.Hunt;
-        lobby.NewVersion();
-    }
-
-    private void HuntTick() {
-        if (!lobby.isOwner)
-            return;
-        bool anyHunters = false;
-        bool anyHiders = false;
-        foreach (OnlinePlayer player in OnlineManager.players) {
-            PlayerData data = lobbyData.GetPlayerData(player);
-            if (!data.ready)
-                continue;
-            if (data.role == PlayerRole.Hunter)
-                anyHunters = anyHunters || data.participating;
-            else if (data.role == PlayerRole.Hider)
-                anyHiders = anyHiders || data.participating;
-        }
-        if (!anyHunters || !anyHiders)
-            EndRound();
-    }
-
-    private void EndRound() {
-        if (!lobbyData.endless || OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready) < 2) {
-            OnlineManager.instance.manager.RequestMainProcessSwitch(SlughuntMenu.id);
-            return;
-        }
-
-        IEnumerable<PlayerData> players = OnlineManager.players
-            .Select(x => lobbyData.GetPlayerData(x))
-            .Where(x => x.ready);
-        switch (lobbyData.ruleset.nextRound) {
-            case Rules.OnNextRound.RandomSide:
-                foreach (PlayerData data in players) {
-                    data.dead = false;
-                    data.role = PlayerRole.None;
-                }
-                break;
-            case Rules.OnNextRound.SwitchSide:
-                foreach (PlayerData data in players) {
-                    data.dead = false;
-                    data.role = data.role switch {
-                        PlayerRole.Hunter => PlayerRole.PreferHider,
-                        PlayerRole.Hider => PlayerRole.PreferHunter,
-                        _ => PlayerRole.None
-                    };
-                }
-                break;
-            default:
-                Plugin.logger.LogError($"unknown rule? {lobbyData.ruleset.nextRound}");
-                break;
-        }
-
-        PrepareRound();
-    }
-
     public override void GameShutDown(RainWorldGame game) {
         base.GameShutDown(game);
-        if (!lobby.isOwner) {
-            if (lobbyData.state == GameState.Lobby)
+        if (lobby.isOwner) {
+            lobbyData.state = Rules.GameState.inLobby;
+            lobby.NewVersion();
+        }
+        else {
+            if (lobbyData.state is Rules.GameState.InLobby)
                 return;
             lobby.owner.InvokeOnceRPC(HostWantExit);
-            return;
         }
-        foreach (PlayerData data in OnlineManager.players.Select(x => lobbyData.GetPlayerData(x))) {
-            data.ready = false;
-            data.role = PlayerRole.None;
-            data.dead = false;
-        }
-        lobby.NewVersion();
     }
 
     [RPCMethod]
     private static void HostWantExit(RPCEvent rpcEvent) {
         LobbyData lobbyData = OnlineManager.lobby.GetData<LobbyData>();
-        if (lobbyData.state == GameState.Lobby)
+        if (lobbyData.state is Rules.GameState.InLobby)
             return;
         PlayerData playerData = lobbyData.GetPlayerData(rpcEvent.from);
-        playerData.ready = false;
-        playerData.role = PlayerRole.None;
-        playerData.dead = false;
+        playerData.Reset();
         OnlineManager.lobby.NewVersion();
     }
 }

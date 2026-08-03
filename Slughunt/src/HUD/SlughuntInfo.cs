@@ -39,35 +39,28 @@ public class SlughuntInfo : HudPart {
 
         TimeSpan time = TimeSpan.FromSeconds((lobby.owner.tick - lobbyData.switchedStateAt) / fps);
         switch (lobbyData.state) {
-            case GameState.Setup:
+            case Rules.GameState.Setup:
                 _stateLabel.text = "Waiting for hiders...";
                 _scoreLabel.isVisible = false;
                 return;
-            case GameState.Hide:
+            case Rules.GameState.Hide:
                 _stateLabel.text = $"Hide: {FormatTime(time - lobbyData.hideTime, "", "-")}";
                 _scoreLabel.isVisible = false;
                 return;
-            case GameState.Hunt:
+            case Rules.GameState.Hunt:
                 _stateLabel.text = $"Hunt: {FormatTime(time)}";
-                break;
-            case GameState.Lobby:
-            default:
-                _stateLabel.text = "what";
+                _scoreLabel.isVisible = playerData.role is Rules.Role.Participant;
                 break;
         }
 
-        bool hunter = playerData.role == PlayerRole.Hunter;
-        if (!hunter && playerData.role != PlayerRole.Hider) {
-            _scoreLabel.isVisible = false;
+        if (!_scoreLabel.isVisible)
             return;
-        }
-        _scoreLabel.isVisible = true;
 
         TimeSpan roleTime = TimeSpan.FromSeconds(playerData.unsavedTime / fps);
         TimeSpan totalTime = TimeSpan.FromSeconds(playerData.currentTotalTime / fps);
 
         _scoreLabel.text = $"""
-            {(hunter ? "Hunting" : "Hiding")} for {FormatTime(roleTime)}
+            {(playerData.role is Rules.Role.Hunter ? "Hunting" : "Hiding")} for {FormatTime(roleTime)}
             Total: {playerData.totalScore} / {FormatTime(totalTime)}
             """;
     }

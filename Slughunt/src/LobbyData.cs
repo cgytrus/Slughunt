@@ -30,28 +30,24 @@ public class LobbyData : OnlineResource.ResourceData {
     public double hideTimeFrames => OnlineManager.instance.framesPerSecond * hideTime.TotalSeconds;
     public Ruleset ruleset { get; set; } = Ruleset.hideAndSeek;
     public bool endless { get; set; }
-    public CompassMode hunterCompass { get; set; } = CompassMode.Off; // TODO
-    public CompassMode hiderCompass { get; set; } = CompassMode.Off; // TODO
-    public TauntMode taunts { get; set; } = TauntMode.Off; // TODO
+    public Rules.CompassMode hunterCompass { get; set; } = Rules.CompassMode.Off; // TODO
+    public Rules.CompassMode hiderCompass { get; set; } = Rules.CompassMode.Off; // TODO
+    public Rules.TauntMode taunts { get; set; } = Rules.TauntMode.Off; // TODO
 
-    // gameplay state
-    public GameState state {
-        get;
+    private Rules.GameState _state = Rules.GameState.inLobby;
+    public Rules.GameState state {
+        get => _state;
         set {
-            if (field == value)
+            if (_state == value)
                 return;
-            field = value;
+            value.Enter(_state);
+            _state = value;
             switchedStateAt = OnlineManager.lobby.owner.tick;
         }
     }
 
     public uint switchedStateAt { get; private set; }
     private Dictionary<ushort, PlayerData> playerData { get; } = [];
-
-    public bool allowLateJoin => endless && (
-        ruleset.hiderRespawn != Rules.OnRespawn.Block ||
-        ruleset.hunterRespawn != Rules.OnRespawn.Block
-    );
 
     public string RandomShelter() => shelters.ElementAtOrDefault(RXRandom.Int(shelters.Count)) ?? DefaultShelter;
 
@@ -110,7 +106,7 @@ public class LobbyData : OnlineResource.ResourceData {
             _hunterCompass = (byte)data.hunterCompass;
             _hiderCompass = (byte)data.hiderCompass;
             _taunts = (byte)data.taunts;
-            _state = (byte)data.state;
+            _state = (byte)data._state;
             _switchedStateAt = data.switchedStateAt;
             _playerData = new DynamicPlayerData(data.playerData);
         }
@@ -129,10 +125,10 @@ public class LobbyData : OnlineResource.ResourceData {
             data.hideTime = TimeSpan.FromTicks(unchecked((long)_hideTime));
             data.ruleset = (Ruleset)_ruleset;
             data.endless = _endless;
-            data.hunterCompass = (CompassMode)_hunterCompass;
-            data.hiderCompass = (CompassMode)_hiderCompass;
-            data.taunts = (TauntMode)_taunts;
-            data.state = (GameState)_state;
+            data.hunterCompass = (Rules.CompassMode)_hunterCompass;
+            data.hiderCompass = (Rules.CompassMode)_hiderCompass;
+            data.taunts = (Rules.TauntMode)_taunts;
+            data._state = (Rules.GameState)_state;
             data.switchedStateAt = _switchedStateAt;
             _playerData.ReadTo(data.playerData);
         }

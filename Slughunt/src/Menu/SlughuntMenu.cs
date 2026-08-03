@@ -22,7 +22,7 @@ public class SlughuntMenu : SmartMenu {
     private static PlayerData playerData => gameMode.playerData;
 
     private readonly SimplerButton _readyButton;
-    private readonly SimplerButton _hunterButton;
+    private readonly SimplerButton _preferenceButton;
     private readonly OpSimpleButton _startButton;
     private readonly OpHoldButton _forceStartButton;
 
@@ -61,21 +61,21 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(_readyButton);
 
-        _hunterButton = new SimplerButton(
+        _preferenceButton = new SimplerButton(
             this, mainPage,
             "penis",
             _readyButton.pos + new Vector2(0f, _readyButton.size.y + 10f), new Vector2(110f, 30f)
         );
-        _hunterButton.OnClick += _ => {
-            lobby.owner.InvokeRPC(SwitchSide);
+        _preferenceButton.OnClick += _ => {
+            lobby.owner.InvokeRPC(SwitchPreference);
         };
-        mainPage.subObjects.Add(_hunterButton);
+        mainPage.subObjects.Add(_preferenceButton);
 
         _startButton = new OpSimpleButton(
             new Vector2(1056f - _readyButton.size.x - 10f, 50f), new Vector2(110f, 30f),
             Translate("START")
         );
-        _startButton.OnClick += _ => gameMode.StartGame();
+        _startButton.OnClick += _ => lobbyData.state.GoToNextIfReady();
         _ = new UIelementWrapper(tabWrapper, _startButton);
 
         _forceStartButton = new OpHoldButton(
@@ -84,7 +84,7 @@ public class SlughuntMenu : SmartMenu {
         ) {
             description = "Only ready players will enter the game"
         };
-        _forceStartButton.OnPressDone += _ => gameMode.StartGame();
+        _forceStartButton.OnPressDone += _ => lobbyData.state.GoToNextIfReady();
         _ = new UIelementWrapper(tabWrapper, _forceStartButton);
 
         _players = new PlayerCards(this, mainPage, new Vector2(50f, 680f - 24f));
@@ -356,14 +356,14 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(hunterCompassLabel);
         _hunterCompass = new OpResourceSelector2(
-            new Configurable<CompassMode>(lobbyData.hunterCompass),
+            new Configurable<Rules.CompassMode>(lobbyData.hunterCompass),
             hunterCompassLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _hunterCompass.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
                 return;
-            lobbyData.hunterCompass = ValueConverter.ConvertToValue<CompassMode>(value);
+            lobbyData.hunterCompass = ValueConverter.ConvertToValue<Rules.CompassMode>(value);
             lobby.NewVersion();
         };
         _ = new UIelementWrapper(tabWrapper, _hunterCompass);
@@ -380,14 +380,14 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(hiderCompassLabel);
         _hiderCompass = new OpResourceSelector2(
-            new Configurable<CompassMode>(lobbyData.hiderCompass),
+            new Configurable<Rules.CompassMode>(lobbyData.hiderCompass),
             hiderCompassLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _hiderCompass.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
                 return;
-            lobbyData.hiderCompass = ValueConverter.ConvertToValue<CompassMode>(value);
+            lobbyData.hiderCompass = ValueConverter.ConvertToValue<Rules.CompassMode>(value);
             lobby.NewVersion();
         };
         _ = new UIelementWrapper(tabWrapper, _hiderCompass);
@@ -404,14 +404,14 @@ public class SlughuntMenu : SmartMenu {
         };
         mainPage.subObjects.Add(tauntsLabel);
         _taunts = new OpResourceSelector2(
-            new Configurable<TauntMode>(lobbyData.taunts),
+            new Configurable<Rules.TauntMode>(lobbyData.taunts),
             tauntsLabel.pos + new Vector2(labelsWidth, 0f),
             200f
         );
         _taunts.OnValueChanged += (_, value, _) => {
             if (!lobby.isOwner)
                 return;
-            lobbyData.taunts = ValueConverter.ConvertToValue<TauntMode>(value);
+            lobbyData.taunts = ValueConverter.ConvertToValue<Rules.TauntMode>(value);
             lobby.NewVersion();
         };
         _ = new UIelementWrapper(tabWrapper, _taunts);
@@ -500,25 +500,25 @@ public class SlughuntMenu : SmartMenu {
         else
             OtherUpdate();
 
-        _hunterButton.menuLabel.text = Translate(playerData.role switch {
-            PlayerRole.None => "PREFER: NEITHER",
-            PlayerRole.PreferHunter => "PREFER: HUNTER",
-            PlayerRole.PreferHider => "PREFER: HIDER",
+        _preferenceButton.menuLabel.text = Translate(playerData.role switch {
+            Rules.Role.None => "PREFER: NEITHER",
+            Rules.Role.PreferHunter => "PREFER: HUNTER",
+            Rules.Role.PreferHider => "PREFER: HIDER",
             _ => "what"
         });
 
-        if (lobbyData.state == GameState.Lobby) {
-            _hunterButton.inactive = lobbyData is { allowHunterPreference: false, allowHiderPreference: false };
+        if (lobbyData.state is Rules.GameState.InLobby) {
+            _preferenceButton.inactive = lobbyData is { allowHunterPreference: false, allowHiderPreference: false };
 
             _readyButton.inactive = false;
             _readyButton.menuLabel.text = Translate(playerData.ready ? "NOT READY" : "READY");
         }
         else {
-            _hunterButton.inactive = true;
+            _preferenceButton.inactive = true;
 
             _readyButton.inactive = !lobbyData.endless;
             _readyButton.menuLabel.text = Translate("ENTER");
-            _readyButton.Description = lobbyData.allowLateJoin ? "" : Translate("Wait for the current round to finish");
+            _readyButton.Description = lobbyData.state.canJoin ? "" : Translate("Wait for the current round to finish");
         }
     }
 
@@ -531,8 +531,7 @@ public class SlughuntMenu : SmartMenu {
             _startButton.Hide();
             _forceStartButton.Show();
         }
-        int readyPlayers = OnlineManager.players.Count(x => lobbyData.GetPlayerData(x).ready);
-        _startButton.greyedOut = !playerData.ready || readyPlayers < 2;
+        _startButton.greyedOut = !lobbyData.state.readyForNext;
         _forceStartButton.greyedOut = _startButton.greyedOut;
 
         _targetHunterCount.greyedOut = false;
@@ -606,20 +605,16 @@ public class SlughuntMenu : SmartMenu {
     [RPCMethod]
     private static void SwitchReady(RPCEvent rpcEvent) {
         PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        data.ready = !data.ready && (lobbyData.allowLateJoin || lobbyData.state == GameState.Lobby);
-        if (data.ready && lobbyData.state != GameState.Lobby)
-            gameMode.AssignLateRole(data);
+        data.ready = !data.ready && lobbyData.state.canJoin;
+        if (data.ready && lobbyData.state is Rules.GameState.InGame)
+            Rules.JoinLate(data);
         lobby.NewVersion();
     }
 
     [RPCMethod]
-    private static void SwitchSide(RPCEvent rpcEvent) {
+    private static void SwitchPreference(RPCEvent rpcEvent) {
         PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        data.SwitchSide();
-        if (data.role == PlayerRole.PreferHunter && !lobbyData.allowHunterPreference)
-            data.SwitchSide();
-        if (data.role == PlayerRole.PreferHider && !lobbyData.allowHiderPreference)
-            data.SwitchSide();
+        data.role = data.role.AsPreference().nextAllowed;
         lobby.NewVersion();
     }
 }

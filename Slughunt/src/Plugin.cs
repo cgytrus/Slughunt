@@ -246,7 +246,7 @@ public partial class Plugin : BaseUnityPlugin {
                 return;
             }
             PlayerData data = gameMode.lobbyData.GetPlayerData(opo.owner);
-            if (data.role != PlayerRole.Hunter) {
+            if (data.role is not Rules.Role.Hunter) {
                 self.markAlpha = 0.0f;
                 orig(self, sLeaser, rCam, timeStacker, camPos);
                 return;
@@ -269,8 +269,8 @@ public partial class Plugin : BaseUnityPlugin {
             if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
                 return;
             self.UpdateGraphic(gameMode.playerData.role switch {
-                PlayerRole.Hunter => 0,
-                PlayerRole.Hider => 4,
+                Rules.Role.Hunter => 0,
+                Rules.Role.Hider => 4,
                 _ => 9
             }, 9);
         };
@@ -313,7 +313,7 @@ public partial class Plugin : BaseUnityPlugin {
     }
 
     private static void OnCatch(PhysicalObject hunterObj, PhysicalObject hiderObj, SlughuntGameMode gameMode) {
-        if (gameMode.lobbyData.state != GameState.Hunt)
+        if (gameMode.lobbyData.state is not Rules.GameState.InGame { canCatch: true })
             return;
 
         if (hunterObj is not Player hunter)
@@ -321,9 +321,7 @@ public partial class Plugin : BaseUnityPlugin {
         if (hiderObj is not Player hider)
             return;
 
-        Participant hunterPart = new(PlayerRole.Hunter, hunter.stun, hunter.dead);
-        Participant hiderPart = new(PlayerRole.Hider, hider.stun, hider.dead);
-        if (!hunterPart.CanCatch(hiderPart))
+        if (!Rules.CanCatch(hunter, hider))
             return;
 
         RainWorldGame game = hunter.room.game;
@@ -332,21 +330,21 @@ public partial class Plugin : BaseUnityPlugin {
         if (self is null)
             return;
 
-        PlayerRole selfRole;
+        Rules.Role selfRole;
         OnlinePlayer? otherOnline;
-        PlayerRole otherRole;
+        Rules.Role otherRole;
         Delegate rpc;
 
         if (self == hunter) {
-            selfRole = PlayerRole.Hunter;
+            selfRole = Rules.Role.hunter;
             otherOnline = hider.abstractPhysicalObject.GetOnlineObject()?.owner;
-            otherRole = PlayerRole.Hider;
+            otherRole = Rules.Role.hider;
             rpc = HostOnCatchAsHunter;
         }
         else if (self == hider) {
-            selfRole = PlayerRole.Hider;
+            selfRole = Rules.Role.hider;
             otherOnline = hunter.abstractPhysicalObject.GetOnlineObject()?.owner;
-            otherRole = PlayerRole.Hunter;
+            otherRole = Rules.Role.hunter;
             rpc = HostOnCatchAsHider;
         }
         else {
@@ -362,7 +360,7 @@ public partial class Plugin : BaseUnityPlugin {
     }
 
     private static bool CatchCheckPlayer(SlughuntGameMode gameMode, [NotNullWhen(true)] OnlinePlayer? player,
-        PlayerRole role) {
+        Rules.Role role) {
         if (player is null)
             return false;
         PlayerData data = gameMode.lobbyData.GetPlayerData(player);
@@ -385,42 +383,19 @@ public partial class Plugin : BaseUnityPlugin {
         PlayerData hiderData = gameMode.lobbyData.GetPlayerData(hider);
         if (hunterData.pendingCatch || hiderData.pendingCatch)
             return;
-        if (hunterData.role != PlayerRole.Hunter || hiderData.role != PlayerRole.Hider)
+        if (hunterData.role is not Rules.Role.Hunter || hiderData.role is not Rules.Role.Hider)
             return;
 
         hunterData.pendingCatch = true;
         hiderData.pendingCatch = true;
 
-        hunterData.caughtAsHunter++;
-        hiderData.caughtAsHider++;
+        Rules.ApplyCatch(hunterData, out int hunterStun);
+        Rules.ApplyCatch(hiderData, out int hiderStun);
 
-        ApplyCatchRule(gameMode, hunter, hunterData);
-        ApplyCatchRule(gameMode, hider, hiderData);
+        hunter.InvokeRPC(PlayerOnCatchConfirm, hunterData.dead, hunterStun);
+        hider.InvokeRPC(PlayerOnCatchConfirm, hiderData.dead, hiderStun);
 
         gameMode.lobby.NewVersion();
-    }
-
-    private static void ApplyCatchRule(SlughuntGameMode gameMode, OnlinePlayer player, PlayerData data) {
-        bool die = false;
-        int stun = 0;
-        Rules.OnCatch rule = gameMode.lobbyData.ruleset.GetCatchRuleFor(data.role);
-        switch (rule) {
-            case Rules.OnCatch.Nothing:
-                break;
-            case Rules.OnCatch.Death:
-                die = true;
-                data.dead = true;
-                break;
-            case Rules.OnCatch.SwitchSide:
-                data.SwitchSide();
-                if (data.role == PlayerRole.Hunter)
-                    stun = (int)(40 * gameMode.lobbyData.hideTime.TotalSeconds);
-                break;
-            default:
-                logger.LogError($"unknown rule? {rule}");
-                break;
-        }
-        player.InvokeRPC(PlayerOnCatchConfirm, die, stun);
     }
 
     [RPCMethod]
@@ -467,7 +442,7 @@ public partial class Plugin : BaseUnityPlugin {
 
             // TODO: update the game over text
             // TODO: spectate
-            if (!gameMode.playerData.participant.canRespawn)
+            if (!gameMode.playerData.role.canRespawn)
                 return;
 
             Respawn(self, gameMode.lobbyData.RandomShelter());
@@ -561,19 +536,7 @@ public partial class Plugin : BaseUnityPlugin {
         if (!SlughuntGameMode.TryGet(out SlughuntGameMode? gameMode))
             return;
         PlayerData playerData = gameMode.lobbyData.GetPlayerData(rpcEvent.from);
-        playerData.dead = false;
-        Rules.OnRespawn rule = gameMode.lobbyData.ruleset.GetRespawnRuleFor(playerData.role);
-        switch (rule) {
-            case Rules.OnRespawn.Nothing:
-            case Rules.OnRespawn.Block:
-                break;
-            case Rules.OnRespawn.SwitchSide:
-                playerData.SwitchSide();
-                break;
-            default:
-                logger.LogError($"unknown rule? {rule}");
-                break;
-        }
+        Rules.ApplyRespawn(playerData);
         gameMode.lobby.NewVersion();
     }
 }
