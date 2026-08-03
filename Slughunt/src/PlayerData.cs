@@ -8,8 +8,6 @@ public sealed record PlayerData {
 
     public bool ready { get; set; }
 
-    public bool pendingCatch { get; set; }
-
     private Rules.Role _role = Rules.Role.none;
     public Rules.Role role {
         get => _role;
@@ -18,8 +16,6 @@ public sealed record PlayerData {
                 return;
             SaveTime(); // unsaved time depends on role so it must be saved before role is changed
             _role = value;
-            if (value is not Rules.Role.Participant)
-                pendingCatch = false;
         }
     }
 
@@ -74,7 +70,6 @@ public sealed record PlayerData {
 
     public void Write(BinaryWriter writer) {
         writer.Write(ready);
-        writer.Write(pendingCatch);
         writer.Write((byte)role);
         writer.Write(dead);
         writer.Write(_changedRoleAt);
@@ -87,7 +82,6 @@ public sealed record PlayerData {
 
     public static PlayerData Read(BinaryReader reader) => new() {
         ready = reader.ReadBoolean(),
-        pendingCatch = reader.ReadBoolean(),
         _role = (Rules.Role)reader.ReadByte(),
         _dead = reader.ReadBoolean(),
         _changedRoleAt = reader.ReadUInt32(),

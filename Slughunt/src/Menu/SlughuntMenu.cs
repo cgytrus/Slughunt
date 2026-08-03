@@ -56,7 +56,7 @@ public class SlughuntMenu : SmartMenu {
             "stupid",
             new Vector2(1056f, 50f), new Vector2(110f, 30f)
         );
-        _readyButton.OnClick += _ => lobby.owner.InvokeRPC(SwitchReady);
+        _readyButton.OnClick += _ => lobby.owner.InvokeRPC(RPC.SwitchReady);
         mainPage.subObjects.Add(_readyButton);
 
         _preferenceButton = new SimplerButton(
@@ -64,7 +64,7 @@ public class SlughuntMenu : SmartMenu {
             "penis",
             _readyButton.pos + new Vector2(0f, _readyButton.size.y + 10f), new Vector2(110f, 30f)
         );
-        _preferenceButton.OnClick += _ => lobby.owner.InvokeRPC(SwitchPreference);
+        _preferenceButton.OnClick += _ => lobby.owner.InvokeRPC(RPC.SwitchPreference);
         mainPage.subObjects.Add(_preferenceButton);
 
         _startButton = new OpSimpleButton(
@@ -598,21 +598,4 @@ public class SlughuntMenu : SmartMenu {
     }
 
     private void OnPlayerListReceived(PlayerInfo[] stupidAndUselessBullshit) => _players.UpdatePlayerCards();
-
-    [RPCMethod]
-    private static void SwitchReady(RPCEvent rpcEvent) {
-        PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        if (data.ready)
-            lobbyData.state.Leave(data);
-        else
-            lobbyData.state.Join(data);
-        lobby.NewVersion();
-    }
-
-    [RPCMethod]
-    private static void SwitchPreference(RPCEvent rpcEvent) {
-        PlayerData data = lobbyData.GetPlayerData(rpcEvent.from);
-        data.role = data.role.AsPreference().nextAllowed;
-        lobby.NewVersion();
-    }
 }

@@ -171,14 +171,7 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
             // WantExit is specifically for when a player wants to exit while in-game
             if (lobbyData.state is not Rules.GameState.InGame)
                 return;
-            lobby.owner.InvokeOnceRPC(HostWantExit);
+            lobby.owner.InvokeOnceRPC(RPC.WantExit);
         }
-    }
-
-    [RPCMethod]
-    private static void HostWantExit(RPCEvent rpcEvent) {
-        LobbyData lobbyData = OnlineManager.lobby.GetData<LobbyData>();
-        lobbyData.state.Leave(lobbyData.GetPlayerData(rpcEvent.from));
-        OnlineManager.lobby.NewVersion();
     }
 }
