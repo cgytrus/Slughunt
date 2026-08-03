@@ -19,17 +19,17 @@ public static class RPC {
         OnCatchOrKill(attacker, from, isCatch, kill);
 
     private static void OnCatchOrKill(OnlinePlayer attacker, OnlinePlayer victim, bool isCatch, bool kill) {
-        if (OnCatchOrKillConfirmPending(attacker) || OnCatchOrKillConfirmPending(victim)) {
-            isCatch = false;
-        }
-
         PlayerData attackerData = lobbyData.GetPlayerData(attacker);
         PlayerData victimData = lobbyData.GetPlayerData(victim);
-        if (attackerData.role is not Rules.Role.Hunter || victimData.role is not Rules.Role.Hider) {
+        if (attackerData.pendingCatch || victimData.pendingCatch)
             isCatch = false;
-        }
+        if (attackerData.role is not Rules.Role.Hunter || victimData.role is not Rules.Role.Hider)
+            isCatch = false;
 
         if (isCatch) {
+            attackerData.pendingCatch = true;
+            victimData.pendingCatch = true;
+
             victimData.dead = victimData.dead || kill;
 
             Rules.OnCatch(attackerData, out int attackerStun);
@@ -47,8 +47,8 @@ public static class RPC {
         }
     }
 
-    [RPCMethod(runDeferred = true)]
-    private static void OnCatchOrKillConfirm(OnlinePlayer otherOnline, bool die, int stun, bool sound) {
+    [RPCMethod]
+    private static void OnCatchOrKillConfirm(OnlinePlayer otherOnline, bool die, int stun, bool isCatch) {
         Player? player = (OnlineManager.instance.manager.currentMainLoop as RainWorldGame)?.FirstRealizedPlayer;
         if (player is null)
             return;
@@ -69,15 +69,20 @@ public static class RPC {
             player.Stun(stun);
         }
 
-        if (sound) {
-            // TODO: maybe play the sound for everyone in the room?
-            player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
-        }
+        if (!isCatch)
+            return;
+
+        // TODO: maybe play the sound for everyone in the room?
+        player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
+
+        from.InvokeRPC(OnCatchOrKillConfirm2);
     }
 
-    private static bool OnCatchOrKillConfirmPending(OnlinePlayer player) => player.OutgoingEvents.Any(x =>
-        x is RPCEvent rpc && rpc.handler.method == ((Delegate)OnCatchOrKillConfirm).Method
-    );
+    [RPCMethod]
+    private static void OnCatchOrKillConfirm2() {
+        fromData.pendingCatch = false;
+        lobby.NewVersion();
+    }
 
     [RPCMethod]
     public static void OnDeath() {

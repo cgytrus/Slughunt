@@ -360,7 +360,11 @@ public partial class Plugin : BaseUnityPlugin {
         if (otherOnline is null)
             return false;
 
-        bool isCatch = attacker is not null && lobbyData.state.CanCatch(attacker, victim);
+        bool isCatch =
+            attacker is not null &&
+            !playerData.pendingCatch &&
+            !lobbyData.GetPlayerData(otherOnline).pendingCatch &&
+            lobbyData.state.CanCatch(attacker, victim);
 
         if (!isCatch && !kill)
             return false;

@@ -74,6 +74,7 @@ public static partial class Rules {
 
             public override void Leave(PlayerData data) {
                 data.ready = false;
+                data.pendingCatch = false;
                 data.role = Role.none;
                 data.dead = false;
             }
