@@ -33,12 +33,6 @@ public class OnlineTimer(Lobby lobby) {
         _pausedAt = isRunning ? 0 : currentTick;
     }
 
-    public uint Save() {
-        uint saved = time;
-        _startedAt = currentTick;
-        return saved;
-    }
-
     public void Write(BinaryWriter writer) {
         writer.Write(_startedAt);
         writer.Write(_pausedAt);

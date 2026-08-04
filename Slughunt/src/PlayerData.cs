@@ -17,7 +17,8 @@ public sealed record PlayerData {
                 return;
             _role = value;
             unsavedTime.isRunning = role.IsTimed(dead);
-            score.time += unsavedTime.Save();
+            score.time += unsavedTime.time;
+            unsavedTime.Reset();
             if (value is not Rules.Role.Participant)
                 pendingCatch = false;
         }
