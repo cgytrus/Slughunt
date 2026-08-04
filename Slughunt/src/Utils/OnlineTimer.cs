@@ -1,17 +1,17 @@
 ﻿using System.IO;
 using RainMeadow;
 
-namespace Slughunt;
+namespace Slughunt.Utils;
 
-public class NetTimer {
-    private static uint currentTick => OnlineManager.lobby.owner.tick;
+public class OnlineTimer(Lobby lobby) {
+    private uint currentTick => lobby.owner.tick;
 
-    public uint time => (running ? currentTick : _pausedAt) - _startedAt;
+    public uint time => (isRunning ? currentTick : _pausedAt) - _startedAt;
 
-    public bool running {
+    public bool isRunning {
         get => _pausedAt == 0;
         set {
-            if (running == value)
+            if (isRunning == value)
                 return;
             if (value) {
                 // pretend we started later to compensate for the paused period
@@ -30,7 +30,7 @@ public class NetTimer {
     // reset time, no unpause!
     public void Reset() {
         _startedAt = currentTick;
-        _pausedAt = running ? 0 : currentTick;
+        _pausedAt = isRunning ? 0 : currentTick;
     }
 
     public uint Save() {

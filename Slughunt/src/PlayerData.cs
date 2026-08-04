@@ -1,4 +1,6 @@
 ﻿using System.IO;
+using RainMeadow;
+using Slughunt.Utils;
 
 namespace Slughunt;
 
@@ -14,7 +16,7 @@ public sealed record PlayerData {
             if (_role == value)
                 return;
             _role = value;
-            unsavedTime.running = role.IsTimed(dead);
+            unsavedTime.isRunning = role.IsTimed(dead);
             score.time += unsavedTime.Save();
             if (value is not Rules.Role.Participant)
                 pendingCatch = false;
@@ -28,11 +30,11 @@ public sealed record PlayerData {
             if (_dead == value)
                 return;
             _dead = value;
-            unsavedTime.running = role.IsTimed(dead);
+            unsavedTime.isRunning = role.IsTimed(dead);
         }
     }
 
-    public NetTimer unsavedTime { get; } = new();
+    public OnlineTimer unsavedTime { get; } = new(OnlineManager.lobby);
 
     public Rules.Score hunterScore { get; } = new(Rules.Role.hunter);
     public Rules.Score hiderScore { get; } = new(Rules.Role.hider);

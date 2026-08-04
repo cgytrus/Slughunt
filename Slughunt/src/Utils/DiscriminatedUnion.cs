@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Slughunt;
+namespace Slughunt.Utils;
 
 public abstract class DiscriminatedUnion<TSelf> where TSelf : DiscriminatedUnion<TSelf> {
     private static readonly List<TSelf> instances = [];
