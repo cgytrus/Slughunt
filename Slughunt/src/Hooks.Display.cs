@@ -57,6 +57,17 @@ public static partial class Hooks {
             On.HUD.HUD.InitSinglePlayerHud += (orig, self, cam) => {
                 orig(self, cam);
                 self.AddPart(new SlughuntInfo(self, self.fContainers[0]));
+
+                if (!MatchmakingManager.currentInstance.canSendChatMessages)
+                    return;
+                if (!RMOverlayHUDMenu.TryGetOverlay(out RMOverlayHUD overlayHud))
+                    return;
+                if (overlayHud.chatHud is null) {
+                    overlayHud.AddChatHUD(cam);
+                }
+                else {
+                    overlayHud.SetNewChatHUDCamera(cam);
+                }
             };
         }
     }
