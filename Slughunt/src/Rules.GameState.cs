@@ -6,7 +6,7 @@ using RainMeadow;
 namespace Slughunt;
 
 public static partial class Rules {
-    public abstract class GameState : EnumClass<GameState> {
+    public abstract class GameState : DiscriminatedUnion<GameState> {
         public static readonly InLobby inLobby = new();
         public static readonly Setup setup = new();
         public static readonly Hide hide = new();

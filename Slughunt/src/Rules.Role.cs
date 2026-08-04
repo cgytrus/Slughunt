@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Slughunt;
 
 public static partial class Rules {
-    public abstract class Role : EnumClass<Role> {
+    public abstract class Role : DiscriminatedUnion<Role> {
         public static readonly None none = new();
         public static readonly PreferHunter preferHunter = new();
         public static readonly PreferHider preferHider = new();
