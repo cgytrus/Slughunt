@@ -33,8 +33,6 @@ public static partial class Rules {
         Role.Participant role = (Role.Participant)player.role;
         stun = 0;
 
-        player.score.caught++;
-
         switch (role.catchRule) {
             case Catch.Nothing:
                 break;

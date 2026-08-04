@@ -34,8 +34,8 @@ public sealed record PlayerData {
 
     public NetTimer unsavedTime { get; } = new();
 
-    public Rules.Score hunterScore { get; } = new();
-    public Rules.Score hiderScore { get; } = new();
+    public Rules.Score hunterScore { get; } = new(Rules.Role.hunter);
+    public Rules.Score hiderScore { get; } = new(Rules.Role.hider);
 
     public long currentTotalTime => role switch {
         Rules.Role.Hunter => totalTime - unsavedTime.time,
@@ -46,10 +46,10 @@ public sealed record PlayerData {
     public Rules.Score score => role switch {
         Rules.Role.Hunter => hunterScore,
         Rules.Role.Hider => hiderScore,
-        _ => new Rules.Score()
+        _ => new Rules.Score(Rules.Role.hunter) // placeholder
     };
 
-    public long totalScore => (long)hunterScore.total - hiderScore.total;
+    public long totalScore => hunterScore.total + hiderScore.total;
     public long totalTime => (long)hiderScore.time - hunterScore.time;
 
     public void Write(BinaryWriter writer) {

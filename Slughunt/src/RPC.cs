@@ -26,6 +26,8 @@ public static class RPC {
         if (attackerData.role is not Rules.Role.Hunter || victimData.role is not Rules.Role.Hider)
             isCatch = false;
 
+        Rules.Score.ScoreCatchOrKill(attackerData, victimData, isCatch, kill);
+
         if (isCatch) {
             attackerData.pendingCatch = true;
             victimData.pendingCatch = true;
@@ -86,6 +88,7 @@ public static class RPC {
 
     [RPCMethod]
     public static void OnDeath() {
+        Rules.Score.ScoreDeath(fromData);
         Rules.OnDeath(fromData);
         lobby.NewVersion();
     }

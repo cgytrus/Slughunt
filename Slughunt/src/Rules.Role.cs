@@ -80,6 +80,8 @@ public static partial class Rules {
                     return false;
                 return true;
             }
+
+            public abstract long TotalScore(Score score);
         }
 
         public sealed class Hunter : Participant {
@@ -92,6 +94,10 @@ public static partial class Rules {
 
             // can the hunter catch someone?
             public bool CanCatch(int stun, bool dead) => IsParticipating(dead) && stun <= 0 && !dead;
+
+            public override long TotalScore(Score score) =>
+                score.caught + score.killCaught +
+                -score.oppositeKilled - score.otherDeaths + score.oppositeKills - score.teamKills;
         }
 
         public sealed class Hider : Participant {
@@ -118,6 +124,10 @@ public static partial class Rules {
 
                 return true;
             }
+
+            public override long TotalScore(Score score) =>
+                -score.caught - score.killCaught +
+                -score.oppositeKilled - score.otherDeaths + score.oppositeKills - score.teamKills;
         }
     }
 }
