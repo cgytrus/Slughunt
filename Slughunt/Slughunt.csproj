@@ -85,4 +85,31 @@
             <_Parameter2_IsLiteral>true</_Parameter2_IsLiteral>
         </AssemblyAttribute>
     </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="src\Rules.GameState.cs">
+        <DependentUpon>Rules.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Rules.Role.cs">
+        <DependentUpon>Rules.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Rules.Score.cs">
+        <DependentUpon>Rules.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Hooks.Display.cs">
+        <DependentUpon>Hooks.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Hooks.Permanent.cs">
+        <DependentUpon>Hooks.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Hooks.Room.cs">
+        <DependentUpon>Hooks.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Hooks.Rules.cs">
+        <DependentUpon>Hooks.cs</DependentUpon>
+      </Compile>
+      <Compile Update="src\Hooks.Settings.cs">
+        <DependentUpon>Hooks.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
 </Project>
