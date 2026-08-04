@@ -55,7 +55,7 @@ public class SlughuntInfo : HudPart {
         if (!_scoreLabel.isVisible || playerData.dead)
             return;
 
-        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.unsavedTime / fps);
+        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.unsavedTime.time / fps);
         TimeSpan totalTime = TimeSpan.FromSeconds(playerData.currentTotalTime / fps);
 
         _scoreLabel.text = $"""

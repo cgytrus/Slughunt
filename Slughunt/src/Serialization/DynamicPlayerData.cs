@@ -44,7 +44,9 @@ public class DynamicPlayerData : DynamicDictionary<ushort, PlayerData, DynamicPl
         }
         data = [];
         for (int i = 0; i < count; ++i) {
-            data.Add(serializer.reader.ReadUInt16(), PlayerData.Read(serializer.reader));
+            PlayerData playerData = new();
+            data.Add(serializer.reader.ReadUInt16(), playerData);
+            playerData.Read(serializer.reader);
         }
     }
 }

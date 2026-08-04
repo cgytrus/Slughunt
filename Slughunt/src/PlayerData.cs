@@ -1,11 +1,8 @@
 ﻿using System.IO;
-using RainMeadow;
 
 namespace Slughunt;
 
 public sealed record PlayerData {
-    private static uint currentTick => OnlineManager.lobby.owner.tick;
-
     public bool ready { get; set; }
 
     public bool pendingCatch { get; set; }
@@ -16,8 +13,9 @@ public sealed record PlayerData {
         set {
             if (_role == value)
                 return;
-            SaveTime(); // unsaved time depends on role so it must be saved before role is changed
             _role = value;
+            unsavedTime.running = role.IsTimed(dead);
+            score.time += unsavedTime.Save();
             if (value is not Rules.Role.Participant)
                 pendingCatch = false;
         }
@@ -30,71 +28,47 @@ public sealed record PlayerData {
             if (_dead == value)
                 return;
             _dead = value;
-            if (role.IsTimed(dead)) {
-                // pretend we started later to compensate for the untimed period
-                _changedRoleAt += currentTick - _stoppedTimingAt;
-            }
-            else {
-                _stoppedTimingAt = currentTick;
-            }
+            unsavedTime.running = role.IsTimed(dead);
         }
     }
 
-    private uint _changedRoleAt;
-    private uint _stoppedTimingAt;
+    public NetTimer unsavedTime { get; } = new();
 
-    public uint unsavedTime => (role.IsTimed(dead) ? currentTick : _stoppedTimingAt) - _changedRoleAt;
+    public Rules.Score hunterScore { get; } = new();
+    public Rules.Score hiderScore { get; } = new();
 
     public long currentTotalTime => role switch {
-        Rules.Role.Hunter => totalTime - unsavedTime,
-        Rules.Role.Hider => totalTime + unsavedTime,
+        Rules.Role.Hunter => totalTime - unsavedTime.time,
+        Rules.Role.Hider => totalTime + unsavedTime.time,
         _ => totalTime
     };
 
-    public uint timeAsHunter { get; private set; }
-    public uint timeAsHider { get; private set; }
-    public uint caughtAsHunter { get; set; }
-    public uint caughtAsHider { get; set; }
+    public Rules.Score score => role switch {
+        Rules.Role.Hunter => hunterScore,
+        Rules.Role.Hider => hiderScore,
+        _ => new Rules.Score()
+    };
 
-    public long totalScore => (long)caughtAsHunter - caughtAsHider;
-    public long totalTime => (long)timeAsHider - timeAsHunter;
-
-    public void ResetUnsavedTime() {
-        _changedRoleAt = currentTick;
-        _stoppedTimingAt = currentTick;
-    }
-
-    private void SaveTime() {
-        if (role is Rules.Role.Hunter)
-            timeAsHunter += unsavedTime;
-        else if (role is Rules.Role.Hider)
-            timeAsHider += unsavedTime;
-        ResetUnsavedTime();
-    }
+    public long totalScore => (long)hunterScore.total - hiderScore.total;
+    public long totalTime => (long)hiderScore.time - hunterScore.time;
 
     public void Write(BinaryWriter writer) {
         writer.Write(ready);
         writer.Write(pendingCatch);
         writer.Write((byte)role);
         writer.Write(dead);
-        writer.Write(_changedRoleAt);
-        writer.Write(_stoppedTimingAt);
-        writer.Write(timeAsHunter);
-        writer.Write(timeAsHider);
-        writer.Write(caughtAsHunter);
-        writer.Write(caughtAsHider);
+        unsavedTime.Write(writer);
+        hunterScore.Write(writer);
+        hiderScore.Write(writer);
     }
 
-    public static PlayerData Read(BinaryReader reader) => new() {
-        ready = reader.ReadBoolean(),
-        pendingCatch = reader.ReadBoolean(),
-        _role = (Rules.Role)reader.ReadByte(),
-        _dead = reader.ReadBoolean(),
-        _changedRoleAt = reader.ReadUInt32(),
-        _stoppedTimingAt = reader.ReadUInt32(),
-        timeAsHunter = reader.ReadUInt32(),
-        timeAsHider = reader.ReadUInt32(),
-        caughtAsHunter = reader.ReadUInt32(),
-        caughtAsHider = reader.ReadUInt32()
-    };
+    public void Read(BinaryReader reader) {
+        ready = reader.ReadBoolean();
+        pendingCatch = reader.ReadBoolean();
+        _role = (Rules.Role)reader.ReadByte();
+        _dead = reader.ReadBoolean();
+        unsavedTime.Read(reader);
+        hunterScore.Read(reader);
+        hiderScore.Read(reader);
+    }
 }

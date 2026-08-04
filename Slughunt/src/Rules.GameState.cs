@@ -173,7 +173,7 @@ public static partial class Rules {
         public sealed class Hunt : InGame {
             public override void Enter(GameState from) {
                 foreach (OnlinePlayer player in OnlineManager.players)
-                    lobbyData.GetPlayerData(player).ResetUnsavedTime();
+                    lobbyData.GetPlayerData(player).unsavedTime.Reset();
             }
 
             public override bool CanCatch(Creature hunter, Creature hider) =>

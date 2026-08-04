@@ -138,10 +138,10 @@ public class PlayerCard : PositionedMenuObject {
 
         double fps = OnlineManager.instance.framesPerSecond;
         string totalTime = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.totalTime / fps));
-        string timeAsHunter = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.timeAsHunter / fps), "+", "-");
-        string timeAsHider = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.timeAsHider / fps), "-", "+");
+        string timeAsHunter = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.hunterScore.time / fps), "+", "-");
+        string timeAsHider = SlughuntInfo.FormatTime(TimeSpan.FromSeconds(data.hiderScore.time / fps), "-", "+");
         _totalScoreLabel.label.text = $"total: {data.totalScore} / {totalTime}";
-        _hunterScoreLabel.label.text = $"hunter: +{data.caughtAsHunter} / {timeAsHunter}";
-        _hiderScoreLabel.label.text = $"hider: -{data.caughtAsHider} / {timeAsHider}";
+        _hunterScoreLabel.label.text = $"hunter: +{data.hunterScore.total} / {timeAsHunter}";
+        _hiderScoreLabel.label.text = $"hider: -{data.hiderScore.total} / {timeAsHider}";
     }
 }

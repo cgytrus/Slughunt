@@ -33,14 +33,7 @@ public static partial class Rules {
         Role.Participant role = (Role.Participant)player.role;
         stun = 0;
 
-        switch (role) {
-            case Role.Hunter:
-                player.caughtAsHunter++;
-                break;
-            case Role.Hider:
-                player.caughtAsHider++;
-                break;
-        }
+        player.score.caught++;
 
         switch (role.catchRule) {
             case Catch.Nothing:
