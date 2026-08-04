@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Expedition;
 using MoreSlugcats;
 using Watcher;
@@ -38,18 +37,9 @@ public static class Blacklist {
         RoomSettings.RoomEffect.Type.VoidSea,
         RoomSettings.RoomEffect.Type.VoidSpawn
     ];
-    public static void ApplyForRoomEffects() => On.RoomSettings.Load_Timeline += (orig, self, timelinePoint) => {
-        if (!SlughuntGameMode.IsIn())
-            return orig(self, timelinePoint);
-        if (!orig(self, timelinePoint))
-            return false;
-        int count = self.effects.RemoveAll(effect => bannedRoomEffects.Contains(effect.type));
-        if (count > 0)
-            Plugin.logger.LogInfo($"removed {count} disallowed effects");
-        return true;
-    };
+    public static bool HasRoomEffect(RoomSettings.RoomEffect effect) => bannedRoomEffects.Contains(effect.type);
 
-    private static bool HasRoomScript(UpdatableAndDeletable script) =>
+    public static bool HasRoomScript(UpdatableAndDeletable script) =>
         ExpeditionGame.IsUndesirableRoomScript(script) ||
         ExpeditionGame.IsMSCRoomScript(script) ||
         script is RoomSpecificScript.SB_D03ShortcutLock ||
@@ -59,15 +49,4 @@ public static class Blacklist {
         script is MSCRoomSpecificScript.SL_AI_Behavior || // rivulet alt ending
         script is MSCRoomSpecificScript.SI_A07_RivEnding || // rivulet alt ending
         script is MSCRoomSpecificScript.RifleTutorial;
-    public static void ApplyForScripts() => On.Room.Loaded += (orig, self) => {
-        orig(self);
-        if (!SlughuntGameMode.IsIn())
-            return;
-        foreach (UpdatableAndDeletable script in self.updateList.Where(HasRoomScript)) {
-            string roomName = self.abstractRoom.name;
-            string? scriptName = script.GetType().FullName;
-            Plugin.logger.LogInfo($"blocking disallowed room specific script: {roomName} {scriptName}");
-            script.Destroy();
-        }
-    };
 }

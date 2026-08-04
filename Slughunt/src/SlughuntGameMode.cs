@@ -16,9 +16,6 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         //RegisterType(type, typeof(SlughuntGameMode), "slughunt");
     }
 
-    // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
-    public static bool IsIn() => OnlineManager.lobby?.gameMode is SlughuntGameMode;
-
     public override ProcessManager.ProcessID MenuProcessId() => SlughuntMenu.id;
 
     public override bool AllowedInMode(PlacedObject item) => !Blacklist.HasPlacedObject(item);
