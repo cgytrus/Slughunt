@@ -1,4 +1,6 @@
-﻿namespace Slughunt;
+﻿using MonoMod.RuntimeDetour;
+
+namespace Slughunt;
 
 public static partial class Hooks {
     // toggleable gameplay features
@@ -12,6 +14,7 @@ public static partial class Hooks {
         }
 
         private static void ToggleCreatures() {
+            using DetourContext ctx = new(PriorityFirst);
             On.WorldLoader.FindingCreatures += (orig, self) => {
                 if (!lobbyData.spawnCreatures)
                     return;
@@ -55,6 +58,7 @@ public static partial class Hooks {
         }
 
         private static void CustomSpawn() {
+            using DetourContext ctx = new(PriorityLast);
             On.SaveState.setDenPosition += (orig, self) => {
                 if (self.saveStateNumber == SlughuntGameMode.save) {
                     self.denPosition = lobbyData.startingShelter;

@@ -1,4 +1,5 @@
-﻿using RainMeadow;
+﻿using MonoMod.RuntimeDetour;
+using RainMeadow;
 using Slughunt.HUD;
 using UnityEngine;
 
@@ -37,6 +38,7 @@ public static partial class Hooks {
         }
 
         private static void FoodHud() {
+            using DetourContext ctx = new(PriorityFirst);
             On.HUD.FoodMeter.Draw += (_, _, _) => { };
         }
 

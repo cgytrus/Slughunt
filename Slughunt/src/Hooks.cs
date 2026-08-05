@@ -7,6 +7,10 @@ using RainMeadow;
 namespace Slughunt;
 
 public static partial class Hooks {
+    // wanna use first when not calling and last when reimplementing
+    public const int PriorityFirst = -1000000;
+    public const int PriorityLast = 1000000;
+
     private static Lobby lobby => OnlineManager.lobby;
     private static LobbyData lobbyData => lobby.GetData<LobbyData>();
     private static PlayerData playerData => lobbyData.GetPlayerData(OnlineManager.mePlayer);

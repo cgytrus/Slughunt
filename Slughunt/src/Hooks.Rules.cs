@@ -1,4 +1,5 @@
 ﻿using System;
+using MonoMod.RuntimeDetour;
 using RainMeadow;
 
 namespace Slughunt;
@@ -76,6 +77,7 @@ public static partial class Hooks {
         }
 
         private static void OnRespawn() {
+            using DetourContext ctx = new(PriorityFirst);
             On.RainWorldGame.GoToDeathScreen += (_, self) => {
                 // TODO: update the game over text
                 // TODO: spectate

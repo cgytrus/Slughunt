@@ -22,10 +22,12 @@ public static partial class Hooks {
         }
 
         private static void DisableOverseers() {
+            using DetourContext ctx = new(PriorityFirst);
             On.WorldLoader.OverseerSpawnConditions += (_, _, _) => false;
         }
 
         private static void DisableGhosts() {
+            using DetourContext ctx = new(PriorityFirst);
             On.World.SpawnGhost += (_, _) => { };
         }
 
@@ -34,14 +36,18 @@ public static partial class Hooks {
                 orig(self);
                 self.activeWorld.rainCycle.timer = 800;
             };
+
+            using DetourContext ctx = new(PriorityFirst);
             On.RainWorldGame.AllowRainCounterToTick += (_, _) => false;
         }
 
         private static void DisableShelters() {
+            using DetourContext ctx = new(PriorityFirst);
             On.ShelterDoor.Close += (_, _) => { };
         }
 
         private static void DisableEating() {
+            using DetourContext ctx = new(PriorityFirst);
             On.Player.CanEatMeat += (_, _, _) => false;
             On.Player.BiteEdibleObject += (_, _, _) => { };
             On.Player.AddFood += (_, _, _) => { };
@@ -58,11 +64,13 @@ public static partial class Hooks {
         }
 
         private static void DisablePups() {
+            using DetourContext ctx = new(PriorityFirst);
             On.World.SpawnPupNPCs += (_, _) => 0;
         }
 
         // TODO: maybe update iterators behavior so they properly react to players in slughunt
         private static void DisableOracles() {
+            using DetourContext ctx = new(PriorityFirst);
             On.Room.AddObject += (orig, self, obj) => {
                 if (obj is Oracle) {
                     Plugin.logger.LogInfo("blocking oracle");
@@ -73,6 +81,7 @@ public static partial class Hooks {
         }
 
         private static void UnlockMap() {
+            using DetourContext ctx = new(PriorityFirst);
             Texture2D? temp = null;
             _ = new Hook(
                 typeof(Map).GetProperty(nameof(Map.discoverTexture))!.GetGetMethod(),
