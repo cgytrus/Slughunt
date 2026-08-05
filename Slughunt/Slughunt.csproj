@@ -7,6 +7,7 @@
         <AssemblyTitle>Slughunt</AssemblyTitle>
         <AssemblyVersion>1.0.0</AssemblyVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+        <PathMap>$([System.String]::Copy($([MSBuild]::NormalizeDirectory('$(SolutionDir)'))).Replace(',', ',,').Replace('=', '=='))=/</PathMap>
     </PropertyGroup>
 
     <ItemGroup>
