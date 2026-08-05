@@ -56,7 +56,7 @@ public static partial class Hooks {
         private static void HudParts() {
             On.HUD.HUD.InitSinglePlayerHud += (orig, self, cam) => {
                 orig(self, cam);
-                self.AddPart(new SlughuntInfo(self, self.fContainers[0]));
+                self.AddPart(new GameInfoPart(self, self.fContainers[0]));
 
                 if (!MatchmakingManager.currentInstance.canSendChatMessages)
                     return;

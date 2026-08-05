@@ -2,7 +2,7 @@
 using System.Text;
 using Menu;
 using RainMeadow;
-using Slughunt.HUD;
+using Slughunt.Utils;
 using UnityEngine;
 
 namespace Slughunt.Menu;
@@ -136,9 +136,9 @@ public class PlayerCard : PositionedMenuObject {
 
         _hostLabel.label.isVisible = lobby.owner == _player;
 
-        string totalTime = SlughuntInfo.FormatTime(data.totalTime);
-        string timeAsHunter = SlughuntInfo.FormatTime(data.hunterScore.time, "+", "-");
-        string timeAsHider = SlughuntInfo.FormatTime(data.hiderScore.time, "-", "+");
+        string totalTime = Epic.FormatTime(data.totalTime);
+        string timeAsHunter = Epic.FormatTime(data.hunterScore.time, "+", "-");
+        string timeAsHider = Epic.FormatTime(data.hiderScore.time, "-", "+");
         _totalScoreLabel.label.text = $"total: {data.totalScore} / {totalTime}";
         _hunterScoreLabel.label.text = $"hunter: +{data.hunterScore.total} / {timeAsHunter}";
         _hiderScoreLabel.label.text = $"hider: -{data.hiderScore.total} / {timeAsHider}";
