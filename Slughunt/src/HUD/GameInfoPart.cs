@@ -33,6 +33,8 @@ public class GameInfoPart : HudPart {
         container.AddChild(_scoreLabel);
     }
 
+    private OnlineTimeSpan _lastUnpausedUnsavedTime;
+
     public override void Update() {
         switch (lobbyData.state) {
             case Rules.GameState.Setup:
@@ -49,10 +51,13 @@ public class GameInfoPart : HudPart {
                 break;
         }
 
-        if (!_scoreLabel.isVisible || playerData.dead)
+        if (playerData.unsavedTime.isRunning)
+            _lastUnpausedUnsavedTime = playerData.unsavedTime.time;
+
+        if (!_scoreLabel.isVisible)
             return;
 
-        string roleTime = Epic.FormatTime(playerData.unsavedTime.time);
+        string roleTime = Epic.FormatTime(_lastUnpausedUnsavedTime);
         string totalTime = Epic.FormatTime(playerData.currentTotalTime);
         _scoreLabel.text = $"""
             {(playerData.role is Rules.Role.Hunter ? "Hunting" : "Hiding")} for {roleTime}
