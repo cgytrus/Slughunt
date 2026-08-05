@@ -31,9 +31,9 @@ public static partial class Hooks {
             On.Player.Die += (orig, self) => {
                 bool alreadyWasDead = self.dead;
                 orig(self);
-                if (self != self.room.game.FirstRealizedPlayer)
-                    return;
                 if (alreadyWasDead)
+                    return;
+                if (!self.abstractCreature.GetOnlineCreature()!.isMine)
                     return;
                 if (!TryCatchOrKill(self.killTag, self, true))
                     lobby.owner.InvokeRPC(RPC.OnDeath);
@@ -41,19 +41,20 @@ public static partial class Hooks {
         }
 
         private static bool TryCatchOrKill(AbstractPhysicalObject? attackerObj, PhysicalObject victimObj, bool kill) {
-            Player? attacker = attackerObj?.realizedObject as Player;
+            if (attackerObj is null)
+                return false;
+            Player? attacker = attackerObj.realizedObject as Player;
             if (victimObj is not Player victim)
                 return false;
 
-            Player? self = victim.room.game.FirstRealizedPlayer;
             OnlinePlayer? otherOnline;
             Delegate rpc;
 
-            if (self == attacker) {
+            if (attackerObj.GetOnlineObject()!.isMine) {
                 otherOnline = victim.abstractPhysicalObject.GetOnlineObject()?.owner;
                 rpc = RPC.OnCatchOrKillAsAttacker;
             }
-            else if (self == victim) {
+            else if (victimObj.abstractPhysicalObject.GetOnlineObject()!.isMine) {
                 otherOnline = attackerObj?.GetOnlineObject()?.owner;
                 rpc = RPC.OnCatchOrKillAsVictim;
             }

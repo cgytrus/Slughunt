@@ -50,7 +50,8 @@ public static class RPC {
 
     [RPCMethod]
     private static void OnCatchOrKillConfirm(OnlinePlayer otherOnline, bool die, int stun, bool isCatch) {
-        Player? player = (OnlineManager.instance.manager.currentMainLoop as RainWorldGame)?.FirstRealizedPlayer;
+        RainWorldGame game = (RainWorldGame)OnlineManager.instance.manager.currentMainLoop;
+        Player? player = game.FirstRealizedPlayer;
         if (player is null)
             return;
 
@@ -74,7 +75,7 @@ public static class RPC {
             return;
 
         // TODO: maybe play the sound for everyone in the room?
-        player.room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
+        game.cameras[0].room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
 
         from.InvokeRPC(OnCatchOrKillConfirm2);
     }
