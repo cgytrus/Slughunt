@@ -4,7 +4,8 @@ using RainMeadow;
 
 namespace Slughunt;
 
-public readonly record struct Ruleset(
+// TODO: figure out how to make this readonly again
+public record struct Ruleset(
     Rules.Catch hiderCatch, Rules.Death hiderDeath,
     Rules.Catch hunterCatch, Rules.Death hunterDeath,
     Rules.NextRoundRole nextRoundRole
@@ -65,13 +66,13 @@ public readonly record struct Ruleset(
         writer.Write((byte)nextRoundRole);
     }
 
-    public static Ruleset Read(BinaryReader reader) => new() {
-        hiderCatch = (Rules.Catch)reader.ReadByte(),
-        hiderDeath = (Rules.Death)reader.ReadByte(),
-        hunterCatch = (Rules.Catch)reader.ReadByte(),
-        hunterDeath = (Rules.Death)reader.ReadByte(),
-        nextRoundRole = (Rules.NextRoundRole)reader.ReadByte()
-    };
+    public void Read(BinaryReader reader) {
+        hiderCatch = (Rules.Catch)reader.ReadByte();
+        hiderDeath = (Rules.Death)reader.ReadByte();
+        hunterCatch = (Rules.Catch)reader.ReadByte();
+        hunterDeath = (Rules.Death)reader.ReadByte();
+        nextRoundRole = (Rules.NextRoundRole)reader.ReadByte();
+    }
 
     public void CustomSerialize(Serializer serializer) {
         if (serializer.IsWriting)
