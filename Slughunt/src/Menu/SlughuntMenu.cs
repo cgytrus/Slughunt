@@ -501,13 +501,14 @@ public class SlughuntMenu : SmartMenu {
         else
             OtherUpdate();
 
+        _preferenceButton.menuLabel.text = playerData.role switch {
+            Rules.Role.None => Translate("PREFER: NEITHER"),
+            Rules.Role.PreferHunter => Translate("PREFER: HUNTER"),
+            Rules.Role.PreferHider => Translate("PREFER: HIDER"),
+            _ => _preferenceButton.menuLabel.text
+        };
+
         if (lobbyData.state is Rules.GameState.InLobby) {
-            _preferenceButton.menuLabel.text = Translate(playerData.role switch {
-                Rules.Role.None => "PREFER: NEITHER",
-                Rules.Role.PreferHunter => "PREFER: HUNTER",
-                Rules.Role.PreferHider => "PREFER: HIDER",
-                _ => "what"
-            });
             _preferenceButton.inactive = lobbyData is { allowHunterPreference: false, allowHiderPreference: false };
 
             _readyButton.inactive = false;
