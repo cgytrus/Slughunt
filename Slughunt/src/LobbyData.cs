@@ -83,7 +83,7 @@ public class LobbyData : OnlineResource.ResourceData {
         [OnlineField] private bool _allowHiderPreference;
 
         [OnlineField] private ulong _hideTime; // rain meadow doesnt support fucking longs but supports ulongs, cool
-        [OnlineField] private byte _ruleset;
+        [OnlineField] private Ruleset _ruleset;
         [OnlineField] private bool _endless;
         [OnlineField] private byte _hunterCompass;
         [OnlineField] private byte _hiderCompass;
@@ -105,7 +105,7 @@ public class LobbyData : OnlineResource.ResourceData {
             _allowHunterPreference = data.allowHunterPreference;
             _allowHiderPreference = data.allowHiderPreference;
             _hideTime = unchecked((ulong)data.hideTime.Ticks);
-            _ruleset = (byte)data.ruleset;
+            _ruleset = data.ruleset;
             _endless = data.endless;
             _hunterCompass = (byte)data.hunterCompass;
             _hiderCompass = (byte)data.hiderCompass;
@@ -127,7 +127,7 @@ public class LobbyData : OnlineResource.ResourceData {
             data.allowHunterPreference = _allowHunterPreference;
             data.allowHiderPreference = _allowHiderPreference;
             data.hideTime = TimeSpan.FromTicks(unchecked((long)_hideTime));
-            data.ruleset = (Ruleset)_ruleset;
+            data.ruleset = _ruleset;
             data.endless = _endless;
             data.hunterCompass = (Rules.CompassMode)_hunterCompass;
             data.hiderCompass = (Rules.CompassMode)_hiderCompass;

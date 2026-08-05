@@ -1,5 +1,6 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using System.IO;
+using RainMeadow;
 
 namespace Slughunt;
 
@@ -7,7 +8,7 @@ public readonly record struct Ruleset(
     Rules.Catch hiderCatch, Rules.Death hiderDeath,
     Rules.Catch hunterCatch, Rules.Death hunterDeath,
     Rules.NextRoundRole nextRoundRole
-) {
+) : Serializer.ICustomSerializable {
     public static readonly Ruleset hideAndSeek = new(
         Rules.Catch.Death, Rules.Death.NoRespawn,
         Rules.Catch.Nothing, Rules.Death.Nothing,
@@ -56,37 +57,26 @@ public readonly record struct Ruleset(
         _ => default(Ruleset)
     };
 
-    private static readonly int catchCount = Enum.GetValues(typeof(Rules.Catch)).Length;
-    private static readonly int deathCount = Enum.GetValues(typeof(Rules.Death)).Length;
-    private static readonly int nextRoundRoleCount = Enum.GetValues(typeof(Rules.NextRoundRole)).Length;
+    public void Write(BinaryWriter writer) {
+        writer.Write((byte)hiderCatch);
+        writer.Write((byte)hiderDeath);
+        writer.Write((byte)hunterCatch);
+        writer.Write((byte)hunterDeath);
+        writer.Write((byte)nextRoundRole);
+    }
 
-    private static readonly int catchSize = (int)Math.Ceiling(Math.Log(catchCount + 1, 2));
-    private static readonly int deathSize = (int)Math.Ceiling(Math.Log(deathCount + 1, 2));
-    private static readonly int nextRoundRoleSize = (int)Math.Ceiling(Math.Log(nextRoundRoleCount + 1, 2));
+    public static Ruleset Read(BinaryReader reader) => new() {
+        hiderCatch = (Rules.Catch)reader.ReadByte(),
+        hiderDeath = (Rules.Death)reader.ReadByte(),
+        hunterCatch = (Rules.Catch)reader.ReadByte(),
+        hunterDeath = (Rules.Death)reader.ReadByte(),
+        nextRoundRole = (Rules.NextRoundRole)reader.ReadByte()
+    };
 
-    private static readonly int catchMax = (1 << catchSize) - 1;
-    private static readonly int deathMax = (1 << deathSize) - 1;
-    private static readonly int nextRoundRoleMax = (1 << nextRoundRoleSize) - 1;
-
-    private static readonly int hiderCatchOffset = 0;
-    private static readonly int hiderDeathOffset = hiderCatchOffset + catchSize;
-    private static readonly int hunterCatchOffset = hiderDeathOffset + deathSize;
-    private static readonly int hunterDeathOffset = hunterCatchOffset + catchSize;
-    private static readonly int nextRoundRoleOffset = hunterDeathOffset + deathSize;
-
-    public static explicit operator byte(Ruleset x) => (byte)(
-        ((byte)x.hiderCatch << hiderCatchOffset) |
-        ((byte)x.hiderDeath << hiderDeathOffset) |
-        ((byte)x.hunterCatch << hunterCatchOffset) |
-        ((byte)x.hunterDeath << hunterDeathOffset) |
-        ((byte)x.nextRoundRole << nextRoundRoleOffset)
-    );
-
-    public static explicit operator Ruleset(byte x) => new(
-        (Rules.Catch)((x >> hiderCatchOffset) & catchMax),
-        (Rules.Death)((x >> hiderDeathOffset) & deathMax),
-        (Rules.Catch)((x >> hunterCatchOffset) & catchMax),
-        (Rules.Death)((x >> hunterDeathOffset) & deathMax),
-        (Rules.NextRoundRole)((x >> nextRoundRoleOffset) & nextRoundRoleMax)
-    );
+    public void CustomSerialize(Serializer serializer) {
+        if (serializer.IsWriting)
+            Write(serializer.writer);
+        else if (serializer.IsReading)
+            Read(serializer.reader);
+    }
 }
