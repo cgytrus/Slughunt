@@ -113,7 +113,14 @@ public class SlughuntGameMode(Lobby lobby) : OnlineGameMode(lobby) {
         if (lobbyData.state is not Rules.GameState.InGame state)
             return;
         state.Tick();
-        NextStateIfReady();
+        if (Rules.GameState.InGame.shouldEndRound) {
+            lobbyData.state = Rules.GameState.InGame.endRound;
+            lobby.NewVersion();
+        }
+        else if (state.readyForNext) {
+            lobbyData.state = state.next;
+            lobby.NewVersion();
+        }
     }
 
     private bool TrySwitchToExpectedProcess() {

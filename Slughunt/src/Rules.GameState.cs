@@ -82,6 +82,25 @@ public static partial class Rules {
 
             // unlike everything else here, called for every player instead of just the host
             public abstract void Tick();
+
+            public static bool shouldEndRound {
+                get {
+                    bool anyHunters = false;
+                    bool anyHiders = false;
+                    foreach (OnlinePlayer player in OnlineManager.players) {
+                        PlayerData data = lobbyData.GetPlayerData(player);
+                        if (!data.ready)
+                            continue;
+                        if (data.role is Role.Hunter)
+                            anyHunters = anyHunters || data.role.IsParticipating(data.dead);
+                        else if (data.role is Role.Hider)
+                            anyHiders = anyHiders || data.role.IsParticipating(data.dead);
+                    }
+                    return !anyHunters || !anyHiders;
+                }
+            }
+
+            public static GameState endRound => lobbyData.endless && canStartRound ? setup : inLobby;
         }
 
         public sealed class Setup : InGame {
@@ -166,7 +185,6 @@ public static partial class Rules {
             }
 
             public override bool readyForNext => lobbyData.stateTime.time >= lobbyData.hideTime;
-
             public override GameState next => hunt;
         }
 
@@ -182,24 +200,9 @@ public static partial class Rules {
 
             public override void Tick() { }
 
-            public override bool readyForNext {
-                get {
-                    bool anyHunters = false;
-                    bool anyHiders = false;
-                    foreach (OnlinePlayer player in OnlineManager.players) {
-                        PlayerData data = lobbyData.GetPlayerData(player);
-                        if (!data.ready)
-                            continue;
-                        if (data.role is Role.Hunter)
-                            anyHunters = anyHunters || data.role.IsParticipating(data.dead);
-                        else if (data.role is Role.Hider)
-                            anyHiders = anyHiders || data.role.IsParticipating(data.dead);
-                    }
-                    return !anyHunters || !anyHiders;
-                }
-            }
-
-            public override GameState next => lobbyData.endless && canStartRound ? setup : inLobby;
+            // no next, this is the end
+            public override bool readyForNext => false;
+            public override GameState next => hunt;
         }
     }
 }
