@@ -35,12 +35,12 @@ public sealed record PlayerData {
         }
     }
 
-    public OnlineTimer unsavedTime { get; } = new(OnlineManager.lobby);
+    public OnlinePausableStopwatch unsavedTime { get; } = new();
 
     public Rules.Score hunterScore { get; } = new(Rules.Role.hunter);
     public Rules.Score hiderScore { get; } = new(Rules.Role.hider);
 
-    public long currentTotalTime => role switch {
+    public OnlineTimeSpan currentTotalTime => role switch {
         Rules.Role.Hunter => totalTime - unsavedTime.time,
         Rules.Role.Hider => totalTime + unsavedTime.time,
         _ => totalTime
@@ -53,7 +53,7 @@ public sealed record PlayerData {
     };
 
     public long totalScore => hunterScore.total + hiderScore.total;
-    public long totalTime => (long)hiderScore.time - hunterScore.time;
+    public OnlineTimeSpan totalTime => hiderScore.time - hunterScore.time;
 
     public void Write(BinaryWriter writer) {
         writer.Write(ready);
@@ -73,5 +73,15 @@ public sealed record PlayerData {
         unsavedTime.Read(reader);
         hunterScore.Read(reader);
         hiderScore.Read(reader);
+    }
+
+    public void ReadTo(PlayerData other) {
+        other.ready = ready;
+        other.pendingCatch = pendingCatch;
+        other._role = role;
+        other._dead = dead;
+        unsavedTime.ReadTo(other.unsavedTime);
+        hunterScore.ReadTo(other.hunterScore);
+        hiderScore.ReadTo(other.hiderScore);
     }
 }

@@ -165,8 +165,7 @@ public static partial class Rules {
                 game.FirstRealizedPlayer?.ChangeCollisionLayer(1);
             }
 
-            public override bool readyForNext =>
-                OnlineManager.lobby.owner.tick - lobbyData.switchedStateAt >= (long)lobbyData.hideTimeFrames;
+            public override bool readyForNext => lobbyData.stateTime.time >= lobbyData.hideTime;
 
             public override GameState next => hunt;
         }

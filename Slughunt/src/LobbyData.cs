@@ -4,6 +4,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using RainMeadow;
 using Slughunt.Serialization;
+using Slughunt.Utils;
 
 namespace Slughunt;
 
@@ -27,7 +28,6 @@ public class LobbyData : OnlineResource.ResourceData {
 
     // gameplay settings
     public TimeSpan hideTime { get; set; } = TimeSpan.FromSeconds(6.0);
-    public double hideTimeFrames => OnlineManager.instance.framesPerSecond * hideTime.TotalSeconds;
     public Ruleset ruleset { get; set; } = Ruleset.hideAndSeek;
     public bool endless { get; set; }
     public Rules.CompassMode hunterCompass { get; set; } = Rules.CompassMode.Off; // TODO
@@ -42,11 +42,12 @@ public class LobbyData : OnlineResource.ResourceData {
                 return;
             value.Enter(_state);
             _state = value;
-            switchedStateAt = OnlineManager.lobby.owner.tick;
+            stateTime.Reset();
         }
     }
 
-    public uint switchedStateAt { get; private set; }
+    public OnlineStopwatch stateTime { get; } = new();
+
     private Dictionary<ushort, PlayerData> playerData { get; } = [];
 
     public SlugcatStats.Name character => campaign;
@@ -89,7 +90,7 @@ public class LobbyData : OnlineResource.ResourceData {
         [OnlineField] private byte _taunts;
 
         [OnlineField] private byte _state;
-        [OnlineField] private uint _switchedStateAt;
+        [OnlineField] private OnlineStopwatch _stateTime = new();
         [OnlineField] private DynamicPlayerData _playerData = new([]);
 
         public State() { }
@@ -110,7 +111,7 @@ public class LobbyData : OnlineResource.ResourceData {
             _hiderCompass = (byte)data.hiderCompass;
             _taunts = (byte)data.taunts;
             _state = (byte)data._state;
-            _switchedStateAt = data.switchedStateAt;
+            data.stateTime.ReadTo(_stateTime);
             _playerData = new DynamicPlayerData(data.playerData);
         }
 
@@ -132,7 +133,7 @@ public class LobbyData : OnlineResource.ResourceData {
             data.hiderCompass = (Rules.CompassMode)_hiderCompass;
             data.taunts = (Rules.TauntMode)_taunts;
             data._state = (Rules.GameState)_state;
-            data.switchedStateAt = _switchedStateAt;
+            _stateTime.ReadTo(data.stateTime);
             _playerData.ReadTo(data.playerData);
         }
 

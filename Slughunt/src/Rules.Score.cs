@@ -1,10 +1,11 @@
 ﻿using System.IO;
+using Slughunt.Utils;
 
 namespace Slughunt;
 
 public static partial class Rules {
     public sealed record Score(Role.Participant role) {
-        public uint time { get; set; }
+        public OnlineTimeSpan time { get; set; }
 
         public uint caught { get; private set; }
         public uint killCaught { get; private set; }
@@ -17,7 +18,7 @@ public static partial class Rules {
         public long total => role.TotalScore(this);
 
         public void Write(BinaryWriter writer) {
-            writer.Write(time);
+            time.Write(writer);
             writer.Write(caught);
             writer.Write(killCaught);
             writer.Write(oppositeKilled);
@@ -28,7 +29,7 @@ public static partial class Rules {
         }
 
         public void Read(BinaryReader reader) {
-            time = reader.ReadUInt32();
+            time = OnlineTimeSpan.Read(reader);
             caught = reader.ReadUInt32();
             killCaught = reader.ReadUInt32();
             oppositeKilled = reader.ReadUInt32();
@@ -36,6 +37,17 @@ public static partial class Rules {
             otherDeaths = reader.ReadUInt32();
             oppositeKills = reader.ReadUInt32();
             teamKills = reader.ReadUInt32();
+        }
+
+        public void ReadTo(Score other) {
+            other.time = time;
+            other.caught = caught;
+            other.killCaught = killCaught;
+            other.oppositeKilled = oppositeKilled;
+            other.teamKilled = teamKilled;
+            other.otherDeaths = otherDeaths;
+            other.oppositeKills = oppositeKills;
+            other.teamKills = teamKills;
         }
 
         public static void ScoreCatchOrKill(PlayerData attacker, PlayerData victim, bool isCatch, bool kill) {

@@ -8,8 +8,11 @@ public class DynamicPlayerData : DynamicDictionary<ushort, PlayerData, DynamicPl
 
     public DynamicPlayerData(Dictionary<ushort, PlayerData> list) {
         added = [];
-        foreach (KeyValuePair<ushort, PlayerData> x in list)
-            added.Add(x.Key, x.Value with { });
+        foreach (KeyValuePair<ushort, PlayerData> x in list) {
+            PlayerData copy = new();
+            x.Value.ReadTo(copy);
+            added.Add(x.Key, copy);
+        }
     }
 
     public override void CustomSerialize(Serializer serializer) {

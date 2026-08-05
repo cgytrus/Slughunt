@@ -34,20 +34,17 @@ public class SlughuntInfo : HudPart {
     }
 
     public override void Update() {
-        double fps = OnlineManager.instance.framesPerSecond;
-
-        TimeSpan time = TimeSpan.FromSeconds((lobby.owner.tick - lobbyData.switchedStateAt) / fps);
         switch (lobbyData.state) {
             case Rules.GameState.Setup:
                 _stateLabel.text = "Waiting for hiders...";
                 _scoreLabel.isVisible = false;
                 break;
             case Rules.GameState.Hide:
-                _stateLabel.text = $"Hide: {FormatTime(time - lobbyData.hideTime, "", "-")}";
+                _stateLabel.text = $"Hide: {FormatTime(lobbyData.stateTime.time - lobbyData.hideTime, "", "-")}";
                 _scoreLabel.isVisible = false;
                 break;
             case Rules.GameState.Hunt:
-                _stateLabel.text = $"Hunt: {FormatTime(time)}";
+                _stateLabel.text = $"Hunt: {FormatTime(lobbyData.stateTime.time)}";
                 _scoreLabel.isVisible = playerData.role is Rules.Role.Participant;
                 break;
         }
@@ -55,12 +52,11 @@ public class SlughuntInfo : HudPart {
         if (!_scoreLabel.isVisible || playerData.dead)
             return;
 
-        TimeSpan roleTime = TimeSpan.FromSeconds(playerData.unsavedTime.time / fps);
-        TimeSpan totalTime = TimeSpan.FromSeconds(playerData.currentTotalTime / fps);
-
+        string roleTime = FormatTime(playerData.unsavedTime.time);
+        string totalTime = FormatTime(playerData.currentTotalTime);
         _scoreLabel.text = $"""
-            {(playerData.role is Rules.Role.Hunter ? "Hunting" : "Hiding")} for {FormatTime(roleTime)}
-            Total: {playerData.totalScore} / {FormatTime(totalTime)}
+            {(playerData.role is Rules.Role.Hunter ? "Hunting" : "Hiding")} for {roleTime}
+            Total: {playerData.totalScore} / {totalTime}
             """;
     }
 
@@ -71,14 +67,16 @@ public class SlughuntInfo : HudPart {
     }
 
     public static string FormatTime(TimeSpan time, string neg = "-", string pos = "") {
-        bool negative = time.Ticks < 0;
         int seconds = Math.Abs((int)Math.Floor(time.TotalSeconds));
+
         int minutes = seconds / 60;
-        seconds = seconds % 60;
+        seconds %= 60;
+
         int hours = minutes / 60;
-        if (hours == 0)
-            return $"{(negative ? neg : pos)}{minutes}:{seconds:D2}";
-        minutes = minutes % 60;
-        return $"{(negative ? neg : pos)}{hours}:{minutes:D2}:{seconds:D2}";
+        minutes %= 60;
+
+        return hours == 0 ?
+            $"{(time.Ticks < 0 ? neg : pos)}{minutes}:{seconds:D2}" :
+            $"{(time.Ticks < 0 ? neg : pos)}{hours}:{minutes:D2}:{seconds:D2}";
     }
 }
