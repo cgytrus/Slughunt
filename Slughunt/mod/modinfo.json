@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "target_game_version": "v1.11.8",
   "authors": "ConfiG",
-  "description": "slughunt\nSource code: https://github.com/cgytrus/Slughunt",
+  "description": "Custom game mode for Rain Meadow that allows playing hide and seek, tag, and other similar games\nSource code: https://github.com/cgytrus/Slughunt",
   "requirements": [ "henpemaz_rainmeadow" ],
   "requirements_names": [ "Rain Meadow" ],
   "priorities": [ "henpemaz_rainmeadow" ],
