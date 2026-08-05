@@ -54,10 +54,6 @@ public static partial class Hooks {
                 otherOnline = victim.abstractPhysicalObject.GetOnlineObject()?.owner;
                 rpc = RPC.OnCatchOrKillAsAttacker;
             }
-            else if (victimObj.abstractPhysicalObject.GetOnlineObject()!.isMine) {
-                otherOnline = attackerObj?.GetOnlineObject()?.owner;
-                rpc = RPC.OnCatchOrKillAsVictim;
-            }
             else {
                 return false;
             }
