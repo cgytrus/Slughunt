@@ -7,4 +7,5 @@ riderModule.iml
 libs/
 *.DotSettings*
 /Slughunt/mod/plugins/
+/Slughunt/mod/modinfo.json
 workshopdata.json

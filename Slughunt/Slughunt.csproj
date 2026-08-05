@@ -72,6 +72,21 @@
     <Target Name="SetupRemixFolder" AfterTargets="AfterBuild">
         <Copy SourceFiles="$(OutDir)/Slughunt.dll" DestinationFolder="mod/plugins" />
         <Copy SourceFiles="$(OutDir)/Slughunt.pdb" DestinationFolder="mod/plugins" />
+
+        <PropertyGroup>
+            <IsDebug>false</IsDebug>
+            <IsDebug Condition="'$(Configuration)' == 'Debug'">true</IsDebug>
+        </PropertyGroup>
+        <WriteLinesToFile
+            File="mod/modinfo.json"
+            Lines="$([System.IO.File]::ReadAllText('modinfo.json.in')
+                .Replace('%NAME%', '$(AssemblyTitle)')
+                .Replace('%VERSION%', '$(AssemblyVersion)')
+                .Replace('%ISDEBUG%', '$(IsDebug)')
+            )"
+            Overwrite="true"
+            Encoding="Unicode"
+        />
     </Target>
 
     <ItemGroup>
