@@ -23,8 +23,30 @@ public class LobbyData : OnlineResource.ResourceData {
 
     // pre gameplay settings
     public ushort targetHunterCount { get; set; } = 1;
-    public bool allowHunterPreference { get; set; } = true;
-    public bool allowHiderPreference { get; set; } = true;
+
+    private bool _allowHunterPreference = true;
+    public bool allowHunterPreference {
+        get => _allowHunterPreference;
+        set {
+            _allowHunterPreference = value;
+            if (value)
+                return;
+            foreach (PlayerData data in playerData.Values.Where(x => x.role is Rules.Role.PreferHunter))
+                data.role = Rules.Role.none;
+        }
+    }
+
+    private bool _allowHiderPreference = true;
+    public bool allowHiderPreference {
+        get => _allowHiderPreference;
+        set {
+            _allowHiderPreference = value;
+            if (value)
+                return;
+            foreach (PlayerData data in playerData.Values.Where(x => x.role is Rules.Role.PreferHider))
+                data.role = Rules.Role.none;
+        }
+    }
 
     // gameplay settings
     public TimeSpan hideTime { get; set; } = TimeSpan.FromSeconds(6.0);
@@ -102,8 +124,8 @@ public class LobbyData : OnlineResource.ResourceData {
             _lockedShortcuts = new DynamicUnorderedShortcuts(data.lockedShortcuts);
             _lockedGates = new DynamicUnorderedStrings(data.lockedGates);
             _targetHunterCount = data.targetHunterCount;
-            _allowHunterPreference = data.allowHunterPreference;
-            _allowHiderPreference = data.allowHiderPreference;
+            _allowHunterPreference = data._allowHunterPreference;
+            _allowHiderPreference = data._allowHiderPreference;
             _hideTime = unchecked((ulong)data.hideTime.Ticks);
             _ruleset = data.ruleset;
             _endless = data.endless;
@@ -124,8 +146,8 @@ public class LobbyData : OnlineResource.ResourceData {
             _lockedShortcuts.ReadTo(data.lockedShortcuts);
             _lockedGates.ReadTo(data.lockedGates);
             data.targetHunterCount = _targetHunterCount;
-            data.allowHunterPreference = _allowHunterPreference;
-            data.allowHiderPreference = _allowHiderPreference;
+            data._allowHunterPreference = _allowHunterPreference;
+            data._allowHiderPreference = _allowHiderPreference;
             data.hideTime = TimeSpan.FromTicks(unchecked((long)_hideTime));
             data.ruleset = _ruleset;
             data.endless = _endless;

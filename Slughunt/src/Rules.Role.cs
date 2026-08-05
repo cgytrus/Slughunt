@@ -35,9 +35,8 @@ public static partial class Rules {
                     return hider;
                 if (currentHunters < 1)
                     return hunter;
-                Preference preference = allowed ? this : none;
                 if (lobbyData.targetHunterCount == 0)
-                    return preference.AsParticipant() ?? (RXRandom.Bool() ? hunter : hider);
+                    return AsParticipant() ?? (RXRandom.Bool() ? hunter : hider);
                 int targetHunters = Mathf.Clamp(lobbyData.targetHunterCount, 1, maxHunters);
                 return currentHunters < targetHunters ? hunter : hider;
             }
