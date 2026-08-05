@@ -74,10 +74,10 @@ public static class RPC {
         if (!isCatch)
             return;
 
+        from.InvokeRPC(OnCatchOrKillConfirm2);
+
         // TODO: maybe play the sound for everyone in the room?
         game.cameras[0].room.PlaySound(SoundID.SS_AI_Give_The_Mark_Boom, 0f, 0.5f, 1f);
-
-        from.InvokeRPC(OnCatchOrKillConfirm2);
     }
 
     [RPCMethod]
