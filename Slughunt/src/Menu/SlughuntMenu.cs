@@ -50,6 +50,10 @@ public class SlughuntMenu : SmartMenu {
     public SlughuntMenu(ProcessManager manager) : base(manager, id) {
         backTarget = RainMeadow.RainMeadow.Ext_ProcessID.LobbySelectMenu;
 
+        // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
+        if (RMOverlayHUD.TryGetOverlay(out RMOverlayHUD overlayHud))
+            overlayHud.DestroyChatHUD();
+
         _readyButton = new SimplerButton(
             this, mainPage,
             "stupid",
