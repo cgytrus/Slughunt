@@ -58,8 +58,8 @@ public sealed record PlayerData {
     public void Write(BinaryWriter writer) {
         writer.Write(ready);
         writer.Write(pendingCatch);
-        writer.Write((byte)role);
-        writer.Write(dead);
+        writer.Write((byte)_role);
+        writer.Write(_dead);
         unsavedTime.Write(writer);
         hunterScore.Write(writer);
         hiderScore.Write(writer);
@@ -78,8 +78,8 @@ public sealed record PlayerData {
     public void ReadTo(PlayerData other) {
         other.ready = ready;
         other.pendingCatch = pendingCatch;
-        other._role = role;
-        other._dead = dead;
+        other._role = _role;
+        other._dead = _dead;
         unsavedTime.ReadTo(other.unsavedTime);
         hunterScore.ReadTo(other.hunterScore);
         hiderScore.ReadTo(other.hiderScore);
