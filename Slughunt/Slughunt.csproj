@@ -70,8 +70,8 @@
     </Target>
 
     <Target Name="SetupRemixFolder" AfterTargets="AfterBuild">
-        <Copy SourceFiles="$(OutDir)/Slughunt.dll" DestinationFolder="slughunt/plugins" />
-        <Copy SourceFiles="$(OutDir)/Slughunt.pdb" DestinationFolder="slughunt/plugins" />
+        <Copy SourceFiles="$(OutDir)/Slughunt.dll" DestinationFolder="mod/plugins" />
+        <Copy SourceFiles="$(OutDir)/Slughunt.pdb" DestinationFolder="mod/plugins" />
     </Target>
 
     <ItemGroup>
